@@ -35,7 +35,22 @@ def test_actions_respect_weekly_allowance_and_checks(root):
     ranks = [c["rank"] for c in doc["callouts"]]
     assert ranks == list(range(1, len(ranks) + 1))
     held = {"RY.TO", "ENB.TO", "CNR.TO", "SHOP.TO", "FTS.TO"}
-    assert held <= {c["ticker"] for c in doc["callouts"]}   # each holding reviewed (first run)
+    listed = {c["ticker"] for c in doc["callouts"]} | {c["ticker"] for c in doc["holdings_review"]}
+    assert held <= listed                                   # every holding reviewed every week
+
+
+def test_ten_trade_ideas_in_order_of_projected_value(root):
+    doc = run(root)
+    cs = doc["callouts"]
+    assert 0 < len(cs) <= 10
+    assert all(c["class"] in ACTION + ("OPPORTUNITY",) for c in cs)
+    acts = [c for c in cs if c["class"] in ACTION]
+    assert cs[:len(acts)] == acts                           # what fits this week comes first
+    for group in (acts, cs[len(acts):]):
+        vals = [c["projected_value_cad"] for c in group if not c.get("risk_driven")]
+        assert vals == sorted(vals, reverse=True)
+    assert all(c["class"] in ("WATCH", "HOLD_OK") for c in doc["holdings_review"] + doc["watchlist"])
+    assert not {c["ticker"] for c in cs} & {c["ticker"] for c in doc["holdings_review"]}
 
 
 def test_cap_reached_demotes_actions(tmp_path):
@@ -59,6 +74,6 @@ def test_dashboard_builds(root):
     out = mod.build(root, root / "_site", now=dt.datetime(2026, 11, 14, 16, tzinfo=dt.timezone.utc))
     html = out.read_text()
     for needle in ("Not investment advice", "Not a trading portal", "public by owner choice", "survivorship",
-                   "This week's callouts", "Account budget", "Risk posture", "Performance", "History", "Run health",
+                   "This week's trade suggestions", "Confirm trades I made", "Account budget", "Risk posture", "Performance", "History", "Run health",
                    "SAMPLE DATA"):
         assert needle in html, needle

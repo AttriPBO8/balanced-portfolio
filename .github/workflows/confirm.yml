@@ -1,0 +1,61 @@
+name: confirm-trades
+# Records the trades you confirm. The dashboard's "Confirm trades" button opens a new issue
+# titled "Confirm trades <date>" with this week's suggestions, one per line. Delete the lines
+# you did not trade, fix shares/price/fee, submit. This job appends them to the trades ledger,
+# updates positions.csv, replies on the issue with the new balances and closes it. If a line
+# can't be read, nothing is written; edit the issue and it runs again.
+on:
+  issues:
+    types: [opened, edited, reopened]
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+permissions:
+  contents: write
+  issues: write
+jobs:
+  confirm:
+    # Only the repository owner or collaborators can change the books (the repo may be public).
+    if: >-
+      startsWith(github.event.issue.title, 'Confirm trades') &&
+      github.event.issue.state == 'open' &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Record trades
+        id: record
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          printf '%s' "$ISSUE_BODY" > "$RUNNER_TEMP/body.txt"
+          set +e
+          python -m pipeline.confirm --body-file "$RUNNER_TEMP/body.txt" --title "$ISSUE_TITLE" \
+            --issue "$ISSUE_NUMBER" --report "$RUNNER_TEMP/report.md"
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+      - name: Commit
+        if: steps.record.outputs.code == '0'
+        run: |
+          git config user.name "callout-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ledger/trades.csv data/positions/positions.csv
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "record confirmed trades from issue #${{ github.event.issue.number }}"
+          git pull --rebase
+          git push
+      - name: Reply on the issue
+        if: always() && steps.record.outputs.code != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$NUMBER" --body-file "$RUNNER_TEMP/report.md"
+          if [ "${{ steps.record.outputs.code }}" = "0" ]; then gh issue close "$NUMBER" --reason completed; fi

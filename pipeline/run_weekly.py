@@ -218,6 +218,8 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
             "contribution_room": rooms,
             "cash_cad": {a: round(portfolio.available_cash(a, D), 2) for a in enabled_accounts(cfg)},
             "overrides_active": wk["overrides"], "callouts": wk["callouts"],
+            "holdings_review": wk["meta"]["holdings_review"], "watchlist": wk["meta"]["watchlist"],
+            "projection_ic": wk["meta"]["projection_ic"],
             "list_note": wk["meta"]["shortfall_reason"], "selector_log": wk["meta"]["log"],
             "position_warnings": portfolio.warnings,
         }
