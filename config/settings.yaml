@@ -95,6 +95,29 @@ validation:
   holdout_years: [2022]      # §13.2: whole-regime holdout
   min_train_weeks: 26
 
+news_features:             # §8.5 forward path for T3-6..T3-9
+  min_shadow_weeks: 26
+  weight: 0.2               # fixed blend weight once admitted (not tuned)
+  auto_admit: true          # admit automatically when the gate passes
+  force_admit: false        # owner override; logged in the model card
+
+backtest:
+  initial_cash: { TFSA: 7000, RRSP: 8000 }
+  monthly_contribution: { TFSA: 0, RRSP: 0 }
+  every_weeks: 1            # 1 = a decision every week, same as production
+  start: null               # null = first date with enough labelled history
+  pbo_blocks: 10            # CSCV blocks (C(10,5) = 252 splits)
+  variants:                 # signal variants for DSR/PBO (number of trials)
+    w_lgbm: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    top_k: [5, 10, 15]
+
+baseline:                   # §13.5 naive baseline
+  n: 10
+  rebalance_months: [1, 4, 7, 10]
+  # Largest TSX-Core names by market cap. Static and owner-maintained: free point-in-time
+  # market-cap history does not exist, so this list carries survivorship bias.
+  tickers: [RY.TO, TD.TO, SHOP.TO, ENB.TO, BN.TO, CNR.TO, CP.TO, BMO.TO, BNS.TO, CNQ.TO]
+
 live_monitoring:
   min_weeks: 8
   ic_divergence: 0.10        # live IC below validation IC by more than this -> low confidence

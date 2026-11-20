@@ -3,7 +3,7 @@
     python site/build.py --root . --out _site
 
 Every number on the page comes from an artifact and shows its run_id / model_card_hash.
-TODO(P7): per-account 12-month charts, override journal outcomes, naive-baseline panel.
+Charts are inline SVG with a hover tooltip and a table view; no external libraries.
 """
 from __future__ import annotations
 
@@ -31,9 +31,11 @@ NOTICES = [
 
 CSS = """
 :root{--bg:#f7f7f5;--fg:#1d1d1b;--muted:#6b6b66;--card:#fff;--line:#e2e1dc;--low:#1f7a4d;--low-bg:#e3f3ea;
---mod:#8a5a00;--mod-bg:#fbf0d9;--high:#a1261c;--high-bg:#f9e1de;--accent:#2f5fa7;--banner:#fff6d6}
+--mod:#8a5a00;--mod-bg:#fbf0d9;--high:#a1261c;--high-bg:#f9e1de;--accent:#2f5fa7;--banner:#fff6d6;
+--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--grid:#e6e5e0}
 @media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ecebe6;--muted:#9c9b94;--card:#201f1d;--line:#34332f;
---low:#6fd3a0;--low-bg:#17352a;--mod:#f0c46a;--mod-bg:#3a2e12;--high:#ff8f84;--high-bg:#42201c;--accent:#8fb4ff;--banner:#3a3416}}
+--low:#6fd3a0;--low-bg:#17352a;--mod:#f0c46a;--mod-bg:#3a2e12;--high:#ff8f84;--high-bg:#42201c;--accent:#8fb4ff;--banner:#3a3416;
+--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--grid:#2e2d2a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
 header,main{max-width:1100px;margin:0 auto;padding:16px}h1{font-size:22px;margin:8px 0}h2{font-size:18px;margin:28px 0 10px}
 nav a{margin-right:14px;color:var(--accent);text-decoration:none;font-size:14px}.notices{font-size:13px;color:var(--muted)}
@@ -47,6 +49,10 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;p
 details summary{cursor:pointer;list-style:none}details summary::-webkit-details-marker{display:none}
 .co{border-left:4px solid var(--line)}.co.ACTION{border-left-color:var(--accent)}.muted{color:var(--muted);font-size:13px}
 .cls{font-weight:700;font-size:12px;letter-spacing:.02em}.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.chart{position:relative}.chart svg{width:100%;height:auto;display:block}.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;margin:4px 0}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;display:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.bars{display:flex;gap:3px;align-items:flex-end;height:48px}.bars span{flex:1;background:var(--s1);border-radius:3px 3px 0 0;min-height:1px}
 @media (max-width:640px){td,th{padding:5px 4px}.hide-sm{display:none}}
 """
 
@@ -65,6 +71,91 @@ def fmt_pct(x, d=0):
 
 def signed(x, spec: str = ".3f") -> str:
     return "n/a" if x is None else format(x, "+" + spec)
+
+
+SERIES_LABELS = {"callouts": "Callouts", "baseline": "Naive baseline", "XIC.TO": "XIC (TSX Composite)", "XIU.TO": "XIU (TSX 60)"}
+
+
+def line_chart(rows: list[dict], keys: list[str], cid: str, title: str) -> str:
+    """Inline SVG line chart: 2px lines, hairline grid, legend + end labels, hover tooltip,
+    and a table view. Series colours follow the entity (fixed slot per key)."""
+    keys = [k for k in keys if any(r.get(k) is not None for r in rows)]
+    if len(rows) < 2 or not keys:
+        return ""
+    W, H, L, R, T, B = 760, 260, 56, 120, 12, 28
+    vals = [r[k] for r in rows for k in keys if r.get(k) is not None and r[k] == r[k]]
+    lo, hi = min(vals), max(vals)
+    pad = (hi - lo) * 0.06 or 1
+    lo, hi = lo - pad, hi + pad
+    x = lambda i: L + (W - L - R) * i / (len(rows) - 1)
+    y = lambda v: T + (H - T - B) * (1 - (v - lo) / (hi - lo))
+    out = [f"<div class='chart' id='{cid}'><div class='legend'>"]
+    out += [f"<span><i style='background:var(--s{i + 1})'></i>{e(SERIES_LABELS.get(k, k))}</span>" for i, k in enumerate(keys)]
+    out.append(f"</div><svg viewBox='0 0 {W} {H}' role='img' aria-label='{e(title)}'>")
+    for j in range(5):
+        v = lo + (hi - lo) * j / 4
+        out.append(f"<line x1='{L}' x2='{W - R}' y1='{y(v):.1f}' y2='{y(v):.1f}' stroke='var(--grid)' stroke-width='1'/>"
+                   f"<text x='{L - 6}' y='{y(v) + 4:.1f}' text-anchor='end' font-size='11' fill='var(--muted)'>${v:,.0f}</text>")
+    for idx in sorted({0, len(rows) // 2, len(rows) - 1}):
+        out.append(f"<text x='{x(idx):.1f}' y='{H - 8}' text-anchor='middle' font-size='11' fill='var(--muted)'>{e(rows[idx]['date'])}</text>")
+    ends = []
+    for i, k in enumerate(keys):
+        pts = " ".join(f"{x(j):.1f},{y(r[k]):.1f}" for j, r in enumerate(rows) if r.get(k) is not None and r[k] == r[k])
+        out.append(f"<polyline points='{pts}' fill='none' stroke='var(--s{i + 1})' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/>")
+        last = rows[-1].get(k)
+        if last is not None and last == last:
+            ends.append([y(last), i, k, last])
+    ends.sort()
+    for n in range(1, len(ends)):   # nudge end labels apart
+        if ends[n][0] - ends[n - 1][0] < 13:
+            ends[n][0] = ends[n - 1][0] + 13
+    for yy, i, k, last in ends:
+        out.append(f"<circle cx='{x(len(rows) - 1):.1f}' cy='{y(last):.1f}' r='4' fill='var(--s{i + 1})' stroke='var(--card)' stroke-width='2'/>"
+                   f"<text x='{W - R + 8}' y='{yy + 4:.1f}' font-size='11' fill='var(--fg)'>{e(SERIES_LABELS.get(k, k).split(' ')[0])} ${last:,.0f}</text>")
+    out.append(f"<line class='xh' x1='0' x2='0' y1='{T}' y2='{H - B}' stroke='var(--muted)' stroke-width='1' visibility='hidden'/>"
+               f"<rect x='{L}' y='{T}' width='{W - L - R}' height='{H - T - B}' fill='transparent' class='hit'/></svg><div class='tip'></div>")
+    data = [{"d": r["date"], **{k: (round(r[k], 2) if r.get(k) is not None and r[k] == r[k] else None) for k in keys}} for r in rows]
+    out.append("<details><summary class='muted'>Table view</summary><table><tr><th>Date</th>"
+               + "".join(f"<th>{e(SERIES_LABELS.get(k, k))}</th>" for k in keys) + "</tr>"
+               + "".join("<tr><td>" + e(d["d"]) + "</td>" + "".join(f"<td>{'' if d[k] is None else f'${d[k]:,.0f}'}</td>" for k in keys) + "</tr>"
+                         for d in data[::max(1, len(data) // 60)]) + "</table></details>")
+    labels = {k: SERIES_LABELS.get(k, k) for k in keys}
+    out.append(f"<script>(function(){{var c=document.getElementById('{cid}'),d={json.dumps(data)},k={json.dumps(keys)},lb={json.dumps(labels)};"
+               f"var svg=c.querySelector('svg'),h=svg.querySelector('.hit'),xh=svg.querySelector('.xh'),tip=c.querySelector('.tip');"
+               f"function mv(ev){{var b=svg.getBoundingClientRect(),sx={W}/b.width,px=(ev.clientX-b.left)*sx;"
+               f"var i=Math.round((px-{L})/({W - L - R})*(d.length-1));i=Math.max(0,Math.min(d.length-1,i));"
+               f"var xx={L}+({W - L - R})*i/(d.length-1);xh.setAttribute('x1',xx);xh.setAttribute('x2',xx);xh.setAttribute('visibility','visible');"
+               f"var s='<b>'+d[i].d+'</b>';k.forEach(function(q,j){{if(d[i][q]!==null)s+='<br><i style=\"display:inline-block;width:10px;height:3px;background:var(--s'+(j+1)+')\"></i> '+lb[q]+': $'+Math.round(d[i][q]).toLocaleString();}});"
+               f"tip.innerHTML=s;tip.style.display='block';var cb=c.getBoundingClientRect();var tx=ev.clientX-cb.left+12;if(tx>cb.width-180)tx-=200;tip.style.left=tx+'px';tip.style.top=(ev.clientY-cb.top+10)+'px';}}"
+               f"h.addEventListener('mousemove',mv);h.addEventListener('mouseleave',function(){{tip.style.display='none';xh.setAttribute('visibility','hidden');}});}})();</script></div>")
+    return "".join(out)
+
+
+def news_gate_text(g: dict | None) -> str:
+    if not g:
+        return ""
+    imp = g.get("mean_ic_improvement_5d")
+    return (f"<br><b>Trial gate</b>: {e(g['status'])} · {g['shadow_weeks']} of {g['required_weeks']} weeks logged · "
+            f"IC change {'n/a' if imp is None else format(imp, '+.3f')}")
+
+
+def budget_bars(hist: list[dict]) -> str:
+    if not hist:
+        return ""
+    cap = max([h["cap"] for h in hist] + [1])
+    bars = "".join(f"<span title='{e(h['month'])}: {h['used']} of {h['cap']}' style='height:{max(h['used'] / cap * 100, 2):.0f}%'></span>" for h in hist)
+    return (f"<div class='muted' style='margin-top:6px'>Transactions per month, last 12 (cap {cap})</div><div class='bars' role='img' "
+            f"aria-label='transactions per month'>{bars}</div><div class='muted'>" + ", ".join(f"{h['month'][2:]}:{h['used']}" for h in hist) + "</div>")
+
+
+def perf_table(series: dict) -> str:
+    keys = [k for k in ("callouts", "baseline", "XIC.TO", "XIU.TO") if k in series]
+    rows = "".join(f"<tr><td>{e(SERIES_LABELS.get(k, k))}</td><td>{fmt_pct(series[k].get('total_return'), 1)}</td>"
+                   f"<td>{fmt_pct(series[k].get('cagr'), 1)}</td><td>{fmt_pct(series[k].get('vol'), 1)}</td>"
+                   f"<td>{'n/a' if series[k].get('sharpe') is None else format(series[k]['sharpe'], '.2f')}</td>"
+                   f"<td>{fmt_pct(series[k].get('max_drawdown'), 1)}</td></tr>" for k in keys)
+    return ("<table><tr><th>Net of costs</th><th>Total</th><th>CAGR</th><th>Vol</th><th>Sharpe</th><th>Max DD</th></tr>"
+            + rows + "</table>")
 
 
 def callout_card(c: dict) -> str:
@@ -127,7 +218,7 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
     parts = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
              f"<title>Weekly Stock Callouts</title><style>{CSS}</style></head><body><header><h1>Weekly stock callouts</h1>"
              "<nav><a href='#week'>This week</a><a href='#budget'>Account budget</a><a href='#risk'>Risk posture</a>"
-             "<a href='#perf'>Performance</a><a href='#history'>History</a><a href='#health'>Run health</a></nav>"
+             "<a href='#perf'>Performance</a><a href='#backtest'>Backtest</a><a href='#history'>History</a><a href='#health'>Run health</a></nav>"
              "<div class='notices'>" + "<br>".join(e(n) for n in NOTICES) + "</div>"
              + "".join(f"<div class='banner'>{e(b)}</div>" for b in banners) + "</header><main>"]
 
@@ -147,7 +238,7 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
                          f"remaining {b['remaining']} · this week {b['weekly_allowance']}<br>Cash ${cal.get('cash_cad', {}).get(a, 0):,.2f}"
                          + (f"<br>Est. contribution room ${room.get('estimated_remaining_cad', 0):,.0f} (entered ${room.get('room_entered_cad', 0):,.0f} as of {e(room.get('as_of'))})" if room else "")
                          + (f"<br><span class='muted'>{e(room.get('note'))}</span>" if room.get("note") else "")
-                         + "<br><span class='muted'>12 months: " + ", ".join(f"{h['month'][2:]}:{h['used']}" for h in (cal.get('budget_history') or {}).get(a, [])) + "</span></div>")
+                         + budget_bars((cal.get('budget_history') or {}).get(a, [])) + "</div>")
     parts.append("</div>")
     # 3. risk posture
     parts.append("<h2 id='risk'>Risk posture</h2><div class='grid'>")
@@ -185,8 +276,37 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
         hr = perf.get("hit_rate_as_if")
         parts.append(f"<p>Hit rate of past ACTION callouts (as-if, vs benchmark): {fmt_pct(hr)} over {perf.get('actions_scored', 0)} actions. "
                      f"Benchmarks since first run: {e(', '.join(f'{k} {v:+.1%}' for k, v in (perf.get('benchmarks_since_start') or {}).items()) or 'n/a')}. "
-                     "Naive baseline: not built yet.</p>")
+                     "</p>")
+        lr = perf.get("live_replay") or {}
+        if lr.get("nav") and len(lr["nav"]) >= 2:
+            parts.append(f"<h3>Live record (as-if, since {e(lr.get('start'))})</h3><p class='muted'>{e(lr.get('note'))}</p>"
+                         + line_chart(lr["nav"], ["callouts", "baseline", "XIC.TO", "XIU.TO"], "live-nav", "Live as-if value vs baseline and benchmarks")
+                         + perf_table(lr.get("series", {})))
     parts.append("</div>")
+    bt_dir = root / "artifacts/backtest/latest"
+    if (bt_dir / "report.json").exists():
+        import csv
+        rep = json.loads((bt_dir / "report.json").read_text())
+        nav = [dict(r, **{k: float(v) for k, v in r.items() if k != "date" and v not in ("", None)})
+               for r in csv.DictReader((bt_dir / "nav.csv").open())]
+        dsr, pbo = rep.get("dsr") or {}, rep.get("pbo") or {}
+        parts.append("<h2 id='backtest'>Backtest</h2><div class='card'>"
+                     f"<p class='banner'>{e(rep.get('caveat'))}</p>"
+                     f"<p><b>{e(rep.get('verdict') or 'No verdict yet')}</b> · {e(rep.get('start'))} to {e(rep.get('end'))} · "
+                     f"{rep.get('weeks')} weeks · {rep.get('trades')} trades (baseline {rep.get('baseline_trades')}) · data {e(rep.get('data_mode'))}</p>"
+                     + line_chart(nav, ["callouts", "baseline", "XIC.TO", "XIU.TO"], "bt-nav", "Backtest value vs baseline and benchmarks")
+                     + perf_table(rep.get("series", {}))
+                     + f"<p>Deflated Sharpe Ratio: <b>{'n/a' if dsr.get('dsr') is None else format(dsr['dsr'], '.2f')}</b> "
+                     f"(probability the Sharpe is real after {dsr.get('n_trials', 0)} trials; above 0.95 is strong) · "
+                     f"Probability of backtest overfitting: <b>{'n/a' if pbo.get('pbo') is None else format(pbo['pbo'], '.0%')}</b> "
+                     f"({pbo.get('splits', 0)} CSCV splits; lower is better{', ' + e(pbo.get('reason')) if pbo.get('reason') else ''})</p>")
+        ab = rep.get("ablation") or {}
+        if ab.get("groups"):
+            parts.append("<p>Feature-group ablation (walk-forward blend IC; positive drop = the group helps): all features "
+                         + signed(ab.get("ic_all")) + "</p><table><tr><th>Group</th><th>IC without</th><th>IC drop</th></tr>"
+                         + "".join(f"<tr><td>{e(g['group'])}</td><td>{signed(g['ic_without'])}</td><td>{signed(g['ic_drop'])}</td></tr>" for g in ab["groups"])
+                         + "</table>")
+        parts.append("</div>")
     # 5. history
     parts.append("<h2 id='history'>History</h2><div class='card'><table><tr><th>Decision date</th><th>Status</th><th>Callouts</th><th class='hide-sm'>Actions</th></tr>")
     for p in reversed(weeks[-52:]):
@@ -209,7 +329,7 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
                  f"<div class='card'><b>Sources</b><br>price source {e(card.get('price_source'))}<br>throttled/failed: {e(', '.join(card.get('sources_throttled') or []) or 'none')}<br>data gaps: {card.get('data_gap_count', 'n/a')}</div>"
                  f"<div class='card'><b>News collection</b> (forward-only, shadow)<br>"
                  + ("<br>".join(f"{e(k)}: {v['items']} items, match rate {fmt_pct(v.get('match_rate'))}" for k, v in (news.get('by_source') or {}).items()) or "no stats yet")
-                 + "</div></div>")
+                 + news_gate_text(perf.get("news_gate")) + "</div></div>")
     parts.append(f"<p class='muted'>Generated {e(now.isoformat(timespec='seconds'))} from committed artifacts.</p></main></body></html>")
     out.mkdir(parents=True, exist_ok=True)
     path = out / "index.html"

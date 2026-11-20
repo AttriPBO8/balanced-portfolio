@@ -14,36 +14,27 @@ import json
 import logging
 import shutil
 import sys
-import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from backtest.validation import purged_walk_forward
-from callouts.builder import ACTION_CLASSES, Builder, WeeklyInputs
-from callouts.rules import budgets, contribution_room, superficial_blocks
+from callouts.builder import ACTION_CLASSES
+from callouts.rules import contribution_room
 from common.config import enabled_accounts, load_config, universe
 from common.dates import (decision_date_for, decision_dates_between, iso_utc, last_close_on_or_before, utc_now)
 from common.io import (StagedWrite, frame_hash, git_sha, new_run_id, read_json, sha256_file, sha256_obj)
 from common.owner_inputs import load_portfolio
 from features.snapshot import FEATURE_SET_VERSION, MODEL_FEATURES, features_at, label_for, rolling_features
-from ingest.macro import fetch_macro, macro_as_of, sample_macro
-from ingest.prices import data_gaps, make_source
-from models.breaks import break_table
-from models.covariance import lw_cov
-from models.rankers import fit_predict, rank_ic
-from models.regime import regime as regime_model
-from models.risk import DIMS, apply_labels, dimension_labels
-from models.volatility import universe_vols
+from ingest.macro import fetch_macro, sample_macro
+from ingest.prices import make_source
+from models.rankers import rank_ic
 from pipeline import state as st
 from pipeline.alerts import Alerts
+from pipeline.core import FileHistory, StepFailure, decide  # noqa: F401 (StepFailure re-exported)
 
 log = logging.getLogger("weekly")
-
-
-class StepFailure(RuntimeError):
-    pass
 
 
 def _training_dates(panel_index: pd.DatetimeIndex, D: dt.date, cfg: dict) -> list[dt.date]:
@@ -57,109 +48,27 @@ def _training_dates(panel_index: pd.DatetimeIndex, D: dt.date, cfg: dict) -> lis
 
 
 def compute_week(cfg: dict, panel, D: dt.date, macro: pd.DataFrame, root: Path, portfolio, low_conf: bool,
-                 fail_at: str | None = None) -> dict:
-    """Steps 4-6 for one decision date. Pure function of its inputs (plus fixed seeds)."""
-    t0 = time.time()
+                 fail_at: str | None = None, news_ctx: dict | None = None) -> dict:
+    """Steps 4-6 for one decision date: features and labels from data <= D, then core.decide."""
     bench = cfg["settings"]["data"]["benchmark"]
     tickers = [t for t in universe(cfg) if t in panel.adj_close.columns]
     close_D = last_close_on_or_before(D)
     p = panel.upto(close_D)
-    rolled = rolling_features(p, bench)
     tdates = _training_dates(p.adj_close.index, D, cfg)
     if D not in tdates:
         tdates.append(D)
-    feats = features_at(p, tdates, bench, tickers, rolled)
-    h = cfg["settings"]["models"]["label_horizon_days"]
-    hc = cfg["settings"]["models"]["conformal_horizon_days"]
-    y_long = label_for(feats, p, h)          # purged: NaN unless realised by close_D
-    y_short = label_for(feats, p, hc)
-    is_D = feats.index.get_level_values("date") == pd.Timestamp(D)
-    current = feats[is_D]
-    train = feats[~is_D]
-    rr = fit_predict(train, y_long[~is_D], y_short[~is_D], current, cfg)
-    snap = current.droplevel("date")
-
-    # ---- risk models
-    vols = universe_vols(p, tickers, cfg)
-    breaks = break_table(p, tickers, pd.Timestamp(close_D), cfg)
-    vix = None
-    if macro is not None and len(macro):
-        mv = macro[(macro["series"] == "vix") & (macro["available_from"] <= pd.Timestamp(close_D))]
-        if len(mv):
-            vix = mv.set_index("obs_date")["value"]
-    reg = regime_model(p.adj_close[bench] if bench in p.adj_close else p.adj_close.mean(axis=1), vix, cfg)
-    gaps = data_gaps(p, close_D)
-    liq_floor = cfg["checks"]["liquidity"]["min_median_traded_value_cad"]
-    rt = pd.DataFrame(index=snap.index)
-    rt = rt.join(vols).join(breaks)
-    rt["halfwidth"] = rr.conformal["halfwidth"]
-    rt["m1_pct"] = rr.scores["m1_pct"]
-    rt["m2_pct"] = rr.scores["m2_pct"]
-    rt["liquid"] = (snap["adv_60d_cad"].fillna(0) >= liq_floor) & (snap["price"].fillna(0) >= cfg["checks"]["min_price"])
-    rt["gap_age"] = pd.Series(gaps).reindex(rt.index).astype(float)
-    dims = dimension_labels(rt, reg, rr.model_agreement, cfg)
-    comp, overrides = apply_labels(dims, rt, reg, cfg)
-
-    if fail_at == "callouts":
-        raise StepFailure("injected failure at step 6 (test)")
-
-    # ---- callouts
-    accounts = enabled_accounts(cfg)
-    bud = budgets(cfg, portfolio.trades, D, accounts, low_confidence=low_conf)
-    rets = p.adj_close[tickers].pct_change(fill_method=None)
-    cov = lw_cov(rets)
-    prev_D = st.latest_published(root, D - dt.timedelta(days=1))
-    prev_scores = st.load_scores(root, prev_D) if prev_D else None
-    prev_labels = prev_scores["composite"].to_dict() if prev_scores is not None and "composite" in prev_scores else {}
-    inp = WeeklyInputs(
-        decision_date=D, cfg=cfg, features=snap, scores=rr.scores, dims=dims, composite=comp, risk_table=rt,
-        conformal=rr.conformal, shap_top=rr.shap_top, regime=reg, portfolio=portfolio, budgets=bud,
-        accounts=accounts, cov=cov, sectors=cfg["sectors"], first_buy_pct=_first_buy_pct(root, portfolio),
-        reviewed_recently=_reviewed_recently(root, D, cfg), prev_labels=prev_labels,
-        superficial=superficial_blocks(portfolio, D, cfg["settings"]["superficial_loss"]["window_days"]))
-    callouts, meta = Builder(inp).build()
-
-    scores = rr.scores.join(dims).assign(composite=comp)
-    scores = scores.join(rt[["garch_sigma", "har_sigma", "halfwidth", "break_age_days", "gap_age", "liquid"]])
-    return {
-        "D": D, "close_D": close_D, "snapshot": snap, "scores": scores, "rr": rr, "regime": reg,
-        "overrides": overrides, "budgets": bud, "callouts": callouts, "meta": meta, "feats": feats,
-        "y_long": y_long, "panel": p, "runtime_s": time.time() - t0, "tickers": tickers,
-        "macro": macro_as_of(macro, close_D) if macro is not None else {}, "gaps": gaps, "vols": vols,
-    }
-
-
-def _first_buy_pct(root: Path, portfolio) -> dict:
-    t = portfolio.trades
-    if t.empty:
-        return {}
-    weeks = st.published_weeks(root)
-    out = {}
-    for tick, g in t[t["side"] == "BUY"].groupby("ticker"):
-        first = min(g["date"])
-        prior = [w for w in weeks if w <= first]
-        if prior:
-            sc = st.load_scores(root, prior[-1])
-            if sc is not None and tick in sc.index:
-                out[tick] = float(sc.at[tick, "blend_pct"])
-    return out
-
-
-def _reviewed_recently(root: Path, D: dt.date, cfg: dict) -> set:
-    n = int(cfg["settings"]["callouts"]["holding_review_weeks"]) - 1
-    weeks = [w for w in st.published_weeks(root) if w < D][-n:] if n > 0 else []
-    seen = set()
-    for w in weeks:
-        c = st.load_callouts(root, w)
-        if c:
-            seen |= {x["ticker"] for x in c.get("callouts", [])}
-    return seen
+    feats = features_at(p, tdates, bench, tickers, rolling_features(p, bench))
+    m = cfg["settings"]["models"]
+    y_long = label_for(feats, p, m["label_horizon_days"])
+    y_short = label_for(feats, p, m["conformal_horizon_days"])
+    return decide(cfg, D, p, feats, y_long, y_short, macro, portfolio, FileHistory(root), low_conf,
+                  news_ctx=news_ctx, fail_at=fail_at)
 
 
 def _performance(root: Path, panel, D: dt.date, cfg: dict, validation: dict | None) -> dict:
     """Live rank IC and as-if hit rate of past ACTION callouts (§13.4, §13.6).
 
-    TODO(P4/P7): naive baseline (top-10 by market cap, quarterly, capped), max drawdown, DSR/PBO.
+    The naive baseline, drawdowns, DSR and PBO come from the live replay and backtest.replay.
     """
     h = cfg["settings"]["models"]["label_horizon_days"]
     hc = cfg["settings"]["models"]["conformal_horizon_days"]
@@ -215,7 +124,7 @@ def _performance(root: Path, panel, D: dt.date, cfg: dict, validation: dict | No
     return {"rank_ic_live": live, "weekly_ic": weekly_ic[-52:], "hit_rate_as_if": (hits / n_actions) if n_actions else None,
             "actions_scored": n_actions, "benchmarks_since_start": bench_ret, "validation_ic_blend": val_ic,
             "low_confidence": low, "naive_baseline": None,
-            "notes": ["Short-window IC is a diagnostic only.", "Naive baseline not implemented yet (TODO P7)."]}
+            "notes": ["Short-window IC is a diagnostic only.", "Baseline comparison: see live_replay and the backtest report."]}
 
 
 def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=None, cfg_overrides: dict | None = None,
@@ -281,7 +190,9 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
 
         # steps 4-6
         prev_perf_low = _prev_low_conf(root)
-        wk = compute_week(cfg, panel, D, macro, root, portfolio, prev_perf_low, fail_at=fail_at)
+        news_ctx = _news_context(root, cfg, panel, D)
+        wk = compute_week(cfg, panel, D, macro, root, portfolio, prev_perf_low, fail_at=fail_at, news_ctx=news_ctx)
+        wk["news_gate"] = news_ctx["gate"]
         validation = None
         if cfg["settings"]["validation"].get("run_in_weekly"):
             validation = purged_walk_forward(wk["feats"][wk["feats"].index.get_level_values("date") < pd.Timestamp(D)],
@@ -313,10 +224,13 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
         perf.update(common)
         perf["decision_date"] = D.isoformat()
         perf["news"] = _news_stats(root)
+        perf["news_gate"] = news_ctx["gate"]
+        perf["live_replay"] = _live_replay(root, cfg, panel, D)
         base = f"artifacts/weekly/{D.isoformat()}"
         stage.json(f"{base}/model_card.json", model_card, schema="model_card")
         stage.json(f"{base}/performance.json", perf, schema="performance")
         stage.csv(f"{base}/scores.csv", wk["scores"].sort_index())
+        stage.csv(f"{base}/shadow_features.csv", news_ctx["features"].sort_index())
         stage.csv(f"artifacts/snapshots/{D.year}/{D.isoformat()}.csv", wk["snapshot"].sort_index())
         if force_reissue:
             stage.text(f"{base}/reissue_reason.txt", f"{computed_at} {force_reissue}\n")
@@ -343,6 +257,29 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
              sum(1 for c in wk["callouts"] if c["class"] in ACTION_CLASSES), wk["runtime_s"])
     return {"status": "published", "decision_date": D.isoformat(), "missed": [m.isoformat() for m in missed],
             "written": written, "run_id": run_id}
+
+
+def _news_context(root: Path, cfg: dict, panel, D: dt.date) -> dict:
+    """News features as of the weekly decision time (D 10:00 ET ~ 15:00 UTC) plus the §8.5 gate."""
+    from features.news import news_features, news_frame, shadow_gate
+    from ingest.finbert import load_scores as load_sentiment
+    from ingest.news import load_news
+    as_of = pd.Timestamp(D) + pd.Timedelta(hours=15)
+    items = load_news(root, as_of.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    nf = news_frame(items, load_sentiment(root))
+    feats = news_features(nf, [t for t in universe(cfg) if t in panel.adj_close.columns], as_of,
+                          panel.upto(last_close_on_or_before(D)).adj_close)
+    gate = shadow_gate(root, panel.adj_close, D, cfg)
+    return {"features": feats, "admitted": gate["admitted"], "weight": gate["weight"], "gate": gate}
+
+
+def _live_replay(root: Path, cfg: dict, panel, D: dt.date) -> dict | None:
+    try:
+        from backtest.replay import replay_live
+        return replay_live(root, cfg, panel, D)
+    except Exception as e:  # reporting only; never blocks publishing
+        log.warning("live replay failed: %s", e)
+        return {"error": str(e)}
 
 
 def _safe_macro(cfg, start, root):
@@ -384,8 +321,10 @@ def _model_card(cfg, wk, validation, catchup_log, panel, root, mode) -> dict:
         "params": rr.params, "seed": cfg["settings"]["models"]["seed"],
         "blend_weights": cfg["settings"]["models"]["blend"],
         "feature_set": {"version": FEATURE_SET_VERSION, "features": MODEL_FEATURES, "hash": sha256_obj(MODEL_FEATURES)},
-        "feature_groups": {"admitted": ["price_momentum_vol", "tier3_earnings_dividends"],
-                           "candidates_shadow": ["tier3_news_events (T3-6..T3-9, forward-only)"],
+        "feature_groups": {"admitted": ["price_momentum_vol", "tier3_earnings_dividends"]
+                           + (["tier3_news_events"] if wk.get("news_admitted") else []),
+                           "candidates_shadow": [] if wk.get("news_admitted") else ["tier3_news_events (T3-6..T3-9, forward-only)"],
+                           "news_gate": wk.get("news_gate"),
                            "removed": [], "not_built": ["tier2_epu_gpr", "tier4_sector_macro"]},
         "train_rows": rr.train_rows, "train_dates": rr.train_dates, "model_agreement_rank_corr": rr.model_agreement,
         "regime": wk["regime"], "overrides_active": wk["overrides"],
