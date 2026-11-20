@@ -1,0 +1,91 @@
+name: weekly
+# Saturday ~10:00 ET with a Sunday retry (no-op if Saturday published). Cron is UTC; the job
+# works out the Toronto decision date itself, so DST and late starts don't matter (§5.2).
+on:
+  schedule:
+    - cron: "0 15 * * 6"
+    - cron: "0 15 * * 0"
+  workflow_dispatch:
+    inputs:
+      force_reissue:
+        description: "Reason for re-issuing this week's callouts (leave empty for a normal run)"
+        required: false
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+permissions:
+  contents: write
+  issues: write
+  pages: write
+  id-token: write
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Restore raw data cache
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: raw-${{ github.run_id }}
+          restore-keys: raw-
+      - name: Collect news (forward history)
+        continue-on-error: true
+        run: python -m ingest.news --no-google
+      - name: Weekly run
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          FORCE_REISSUE: ${{ github.event.inputs.force_reissue }}
+        run: |
+          if [ -n "$FORCE_REISSUE" ]; then
+            python -m pipeline.run_weekly --force-reissue "$FORCE_REISSUE"
+          else
+            python -m pipeline.run_weekly
+          fi
+      - name: Commit artifacts (the audit trail)
+        run: |
+          git config user.name "callout-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add artifacts state
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "weekly callouts $(date -u +%F) [run ${{ github.run_id }}]"
+          git pull --rebase
+          git push
+      - name: Build dashboard
+        if: always()
+        run: python site/build.py --out _site
+      - uses: actions/upload-pages-artifact@v3
+        if: always()
+        with:
+          path: _site
+      - name: Open issues for alerts
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f .alerts/alerts.json ]; then
+            python - <<'PY'
+          import json, subprocess
+          for a in json.load(open(".alerts/alerts.json")):
+              subprocess.run(["gh", "issue", "create", "--title", a["title"], "--body", a["body"]], check=False)
+          PY
+          fi
+      - name: Open issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue create --title "Weekly pipeline failed" --body "Run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Nothing was committed and run_state.json is unchanged; the Sunday retry or next week resumes."
+  deploy:
+    needs: weekly
+    if: always()
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/deploy-pages@v4

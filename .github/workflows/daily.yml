@@ -1,0 +1,51 @@
+name: daily
+# Mon-Fri ~22:30 ET (03:30 UTC Tue-Sat). Monitoring only; never required for callouts.
+# Turn it off with schedule.daily.enabled: false (or daily.until) in config/settings.yaml.
+on:
+  schedule:
+    - cron: "30 3 * * 2-6"
+  workflow_dispatch:
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+permissions:
+  contents: write
+  issues: write
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: raw-${{ github.run_id }}
+          restore-keys: raw-
+      - run: python -m pipeline.run_daily
+      - name: Commit monitor artifacts
+        run: |
+          git config user.name "callout-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add artifacts state
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "daily monitor $(date -u +%F)"
+          git pull --rebase
+          git push
+      - name: Open issues for alerts
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f .alerts/alerts.json ]; then
+            python - <<'PY'
+          import json, subprocess
+          for a in json.load(open(".alerts/alerts.json")):
+              subprocess.run(["gh", "issue", "create", "--title", a["title"], "--body", a["body"]], check=False)
+          PY
+          fi

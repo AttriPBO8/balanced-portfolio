@@ -1,0 +1,9 @@
+# §13.2: only these parameters may be tuned in validation. Everything else is fixed before testing.
+tunable:
+  - settings.models.blend.w_lgbm
+  - settings.models.blend.w_ridge
+  - settings.models.lgbm.num_leaves
+  - settings.models.lgbm.n_estimators
+  - risk.R3_forecast_uncertainty.low_halfwidth
+  - risk.R3_forecast_uncertainty.high_halfwidth
+  - settings.models.pelt_penalty_mult
