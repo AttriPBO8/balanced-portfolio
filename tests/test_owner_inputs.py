@@ -74,9 +74,11 @@ def test_overselling_fails():
 def test_cross_check_warns_not_fails(root):
     pf = load_portfolio(root)
     pos = pf.positions.copy()
-    pos.loc[0, "quantity"] = 99
+    pos.loc[0, "quantity"] = 1          # fewer shares than the ledger bought
     w = cross_check(pos, pf.trades)
     assert any("RY.TO" in x for x in w)
+    pos.loc[0, "quantity"] = 99         # extra shares = held before the ledger started
+    assert not any("RY.TO" in x for x in cross_check(pos, pf.trades))
 
 
 def test_cash_includes_ledger_movements_after_as_of(root):

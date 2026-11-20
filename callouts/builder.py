@@ -6,6 +6,7 @@ import math
 from dataclasses import dataclass, field
 
 import pandas as pd
+from scipy.stats import norm
 
 from callouts import addon as addon_mod
 from callouts.checks import blocked, position_limit, run_checks, warnings_of
@@ -73,6 +74,26 @@ class Builder:
     def est_cost(self, value: float) -> float:
         return self.fees["per_trade_cad"] + value * self.fees["half_spread_bps"] / 1e4
 
+    def projected_return(self, t: str) -> float:
+        """Projected 3-month return vs the universe (Grinold's rule: IC x volatility x score).
+
+        IC is a fixed, conservative rank IC (settings.callouts.projection_ic); volatility is the
+        stock's GARCH sigma scaled to the label horizon; the score is the blended percentile
+        turned into a z-score. A ranking estimate, not a price forecast."""
+        ic = float(self.c["callouts"].get("projection_ic", 0.05))
+        horizon = int(self.c["models"]["label_horizon_days"])
+        sig = _f(self.i.risk_table.at[t, "garch_sigma"]) if t in self.i.risk_table.index else None
+        if not sig:
+            sig = _f(self.i.features.loc[t].get("vol_60d")) or 0.25
+        z = float(norm.ppf(min(max(float(self.i.scores.at[t, "blend_pct"]), 0.01), 0.99)))
+        return ic * sig * math.sqrt(horizon / 252) * z
+
+    def projected_value(self, t: str, value: float, buy: bool) -> float:
+        """Dollar value of a trade over the next 3 months: projected return on the amount traded,
+        less this trade's commission and spread. A sell's value is the projected return avoided."""
+        r = self.projected_return(t)
+        return (value * r if buy else -value * r) - self.est_cost(value)
+
     def sector_after(self, ticker: str, add: float) -> float | None:
         if self.market_value + add <= 0:
             return None
@@ -134,11 +155,12 @@ class Builder:
                 if want and not blocked(chk) and t not in i.superficial:
                     co = self.base(t, "ACTION_BUY_NEW")
                     co.update(checks=chk, _pullback=why, _flag=flag)
-                    co["priority"] = (s - 0.5) / (self.est_cost(nominal_new) / nominal_new * 100 + _risk_pen(comp))
+                    co["priority"] = self.projected_value(t, nominal_new, buy=True)
                     actions.append(co)
-                elif flag:
+                elif flag or (s >= 1 - c["opportunity"]["score_quantile"] and not blocked(chk)):
+                    # trade ideas that don't make an action this week, so the list can reach `count`
                     co = self.base(t, "OPPORTUNITY")
-                    co.update(checks=chk, _pullback=why, _flag=True)
+                    co.update(checks=chk, _pullback=why, _flag=flag)
                     co["demoted_reason"] = ("checks_failed: " + ", ".join(blocked(chk))) if blocked(chk) else \
                         ("superficial_loss" if t in i.superficial else "below_action_threshold")
                     others[t] = co
@@ -152,7 +174,10 @@ class Builder:
             if exit_ or trim:
                 co = self.base(t, "ACTION_EXIT" if exit_ else "ACTION_TRIM")
                 co["checks"] = self.checks_for(t, 0.0)
-                co["priority"] = (0.5 - s + (0.25 if comp == "High" else 0.0) + (0.2 if cur_val > limit else 0.0)) / 0.2
+                # risk-driven sells (High risk, structural break, oversized) go first whatever the value
+                co["risk_driven"] = bool(comp == "High" or cur_val > limit * 1.10)
+                sold = cur_val if exit_ else max(cur_val - limit, cur_val / 2)
+                co["priority"] = self.projected_value(t, sold, buy=False) + (1e9 if co["risk_driven"] else 0.0)
                 co["_limit"] = limit
                 actions.append(co)
                 continue
@@ -173,50 +198,73 @@ class Builder:
             else:
                 others[res["ticker"]] = res
 
-        # ---------------------------------------------------------- non-action fill
-        taken = {c_["ticker"] for c_ in final_actions}
-        mandatory = []
+        # ---------------------------------------------------------- the weekly list
+        # Up to `count` trade suggestions: actions that fit this week's caps and cash, then
+        # trade ideas that don't (OPPORTUNITY), each group in order of projected value.
+        for co in final_actions + list(others.values()):
+            self._set_value(co)
+        n = int(cc["count"])
+        acts = sorted(final_actions, key=lambda x: (not x.get("risk_driven", False), -x["projected_value_cad"], x["ticker"]))
+        ideas = sorted([x for x in others.values() if x["class"] == "OPPORTUNITY"],
+                       key=lambda x: (-x["projected_value_cad"], x["ticker"]))
+        final = (acts + ideas)[:n]
+        taken = {x["ticker"] for x in final}
+
+        # Every holding not in the list gets a one-line review (hold or watch), every week.
+        review = []
         for t in sorted(self.value_by_ticker.index):
-            if t in taken or t in others or t not in eligible:
+            if t in taken or t not in eligible:
                 continue
-            co = self._watch_or_hold(t)
-            if t not in i.reviewed_recently:
-                co["_mandatory"] = True
-                mandatory.append(co)
-            else:
-                others[t] = co
-        for t in eligible:
-            if t in taken or t in others or any(m["ticker"] == t for m in mandatory):
+            co = others.get(t) or self._watch_or_hold(t)
+            if co["class"] not in ("WATCH", "HOLD_OK"):
+                co = self._watch_or_hold(t)
+            review.append(co)
+        # A short watch list of unheld names with something notable, best score first.
+        watch = []
+        for t in sorted(eligible, key=lambda x: -float(i.scores.at[x, "blend_pct"])):
+            if t in taken or t in self.value_by_ticker.index:
                 continue
             w = self._watch_reason(t)
-            s = float(i.scores.at[t, "blend_pct"])
-            if w or s >= 1 - c["opportunity"]["score_quantile"]:
+            if w:
                 co = self.base(t, "WATCH")
                 co["checks"] = self.checks_for(t, nominal_new)
-                co["_watch"] = w or ["top_ranked"]
-                others[t] = co
+                co["_watch"] = w
+                watch.append(co)
+            if len(watch) >= int(cc.get("watchlist_count", 5)):
+                break
 
-        n = int(cc["count"])
-        chosen = final_actions[:n]
-        room = n - len(chosen)
-        chosen += mandatory[:room]
-        room = n - len(chosen)
-        rest = sorted(others.values(), key=lambda x: (-x["score_pct"], x["ticker"]))
-        chosen += rest[:max(room, 0)]
-        acts = [x for x in chosen if x["class"] in ACTION_CLASSES]
-        non = sorted([x for x in chosen if x["class"] not in ACTION_CLASSES], key=lambda x: (-x["score_pct"], x["ticker"]))
-        final = acts + non
-        for rank, co in enumerate(final, 1):
-            co["rank"] = rank
-            co["warnings"] = sorted(set(co["warnings"]) | set(warnings_of(co["checks"])))
-            co["rationale"] = self._rationale(co)
-            for k in [k for k in co if k.startswith("_")]:
-                co.pop(k)
+        for lst in (final, review, watch):
+            for rank, co in enumerate(lst, 1):
+                self._finish(co, rank)
         meta = {"eligible": len(eligible), "shortfall_reason": None if len(final) >= n else
-                f"only {len(final)} names met the callout criteria out of {len(eligible)} scored; the list is not padded",
+                f"only {len(final)} trade ideas met the criteria out of {len(eligible)} stocks scored; the list is not padded",
                 "starter_active": self.starter_active, "invested_cad": self.invested, "log": self.log,
-                "cash_after": self.cash, "allowance_left": self.allow}
+                "cash_after": self.cash, "allowance_left": self.allow,
+                "holdings_review": review, "watchlist": watch,
+                "projection_ic": float(self.c["callouts"].get("projection_ic", 0.05))}
         return final, meta
+
+    def _set_value(self, co: dict) -> None:
+        t, cls = co["ticker"], co["class"]
+        price = _f(self.price.get(t)) or 0.0
+        if co["shares"]:
+            value = co["shares"] * price
+        elif cls == "OPPORTUNITY" and t in self.value_by_ticker.index:
+            value = co.get("_add_value") or self.sizing["add_cad"]
+        else:
+            value = self.sizing["new_position_cad"]
+        buy = cls in ("ACTION_BUY_NEW", "ACTION_ADD", "OPPORTUNITY")
+        co["projected_return_3m"] = round(self.projected_return(t), 4)
+        co["projected_value_cad"] = round(self.projected_value(t, value, buy), 2)
+
+    def _finish(self, co: dict, rank: int) -> None:
+        co["rank"] = rank
+        co.setdefault("projected_return_3m", round(self.projected_return(co["ticker"]), 4))
+        co.setdefault("projected_value_cad", None)
+        co["warnings"] = sorted(set(co["warnings"]) | set(warnings_of(co["checks"])))
+        co["rationale"] = self._rationale(co)
+        for k in [k for k in co if k.startswith("_")]:
+            co.pop(k)
 
     def _addon_candidate(self, t, s, comp, r5, row, gs, why) -> dict:
         i = self.i
@@ -245,7 +293,7 @@ class Builder:
         if not ok:
             co["demoted_reason"] = f"addon_{a['verdict'].lower()}" if a["verdict"] != addon_mod.HELPS else \
                 ("checks_failed: " + ", ".join(blocked(chk)) if blocked(chk) else "superficial_loss")
-        co["priority"] = (s - 0.5) / (self.est_cost(add_value) / max(add_value, 1) * 100 + _risk_pen(comp))
+        co["priority"] = self.projected_value(t, add_value, buy=True)
         return co
 
     def _route(self, co: dict) -> dict:
@@ -413,6 +461,3 @@ def _reason_text(r: str | None) -> str:
         return "failed checks (" + r.split(":", 1)[1].strip() + ")"
     return REASONS.get(r, r)
 
-
-def _risk_pen(label: str) -> float:
-    return {"Low": 0.1, "Moderate": 0.5, "High": 1.0}.get(label, 0.5)

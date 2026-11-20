@@ -8,6 +8,9 @@ data:
   benchmark: XIC.TO          # S&P/TSX Composite proxy (measurement only, D-2)
   benchmarks_extra: [XIU.TO] # S&P/TSX 60 proxy
 
+github:
+  repository: AttriPBO8/balanced-portfolio   # used for the dashboard's Confirm trades link
+
 schedule:
   timezone: America/Toronto
   weekly:
@@ -22,8 +25,10 @@ schedule:
     review_banner_after_days: 90
 
 callouts:
-  count: 25
-  holding_review_weeks: 4    # each holding shows up at least once every 4 weeks
+  count: 10                  # trade suggestions per week, in order of projected value
+  watchlist_count: 5         # unheld names with something notable (earnings, label change), shown below
+  projection_ic: 0.05        # rank IC used to turn scores into projected 3-month returns (conservative)
+  holding_review_weeks: 4    # every holding is now reviewed every week in the holdings table
   buy_new_quantile: 0.85     # blended score percentile needed for a new-buy candidate
   exit_quantile: 0.15        # held names ranked below this are exit candidates
   watch_earnings_days: 5

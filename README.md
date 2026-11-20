@@ -1,17 +1,30 @@
 # Weekly stock callouts
 
-A low-maintenance engine that publishes **25 ranked stock callouts every week** for TSX stocks held in a TFSA and RRSP, built from [REQUIREMENTS.md](REQUIREMENTS.md) (v2.0). Each callout has a plain-language rationale, a 7-dimension risk breakdown, a Low / Moderate / High label and the result of every per-stock check. Callouts are committed to Git as the audit trail and shown on a static GitHub Pages dashboard.
+A low-maintenance engine that publishes **up to 10 trade suggestions every week**, in order of projected value, for TSX stocks held in a TFSA and RRSP, built from [REQUIREMENTS.md](REQUIREMENTS.md) (v2.0). Every other holding gets a one-line review each week. Each suggestion has a plain-language rationale, a 7-dimension risk breakdown, a Low / Moderate / High label and the result of every per-stock check. Callouts are committed to Git as the audit trail and shown on a static GitHub Pages dashboard.
 
 > Recommendations only. Not investment advice. The owner places every order.
-> Not a trading portal: callouts are weekly and capped by a monthly transaction budget per account.
+> Not a trading portal: suggestions are weekly and capped by a monthly transaction budget per account.
 > Positions in this repository are public by owner choice.
+
+## Confirming trades
+
+After you trade, press **Confirm trades I made** on the dashboard. It opens a GitHub issue titled `Confirm trades <date>` with this week's trades filled in, one per line:
+
+```
+BUY RRSP BMO.TO 9 @ 152.30 fee 9.95
+SELL TFSA CNR.TO 6 @ 171.10 fee 9.95 on 2026-11-20
+```
+
+Delete the lines you did not trade, correct shares, price and fee, and submit. The `confirm-trades` workflow appends the trades to `data/ledger/trades.csv`, updates `data/positions/positions.csv` (average cost), replies on the issue with your cash, trade counts and holdings, and closes it. Cash moves automatically because it is derived from `cash.csv` plus later trades. If a line can't be read or a sale is larger than the holding, nothing is written; edit the issue and it runs again. Only the owner and collaborators can trigger it. **Record another trade** opens the same form empty.
+
+**Projected value** is the blended score turned into an expected 3-month return with Grinold's rule (`projection_ic` x the stock's 3-month volatility x the score as a z-score), times the amount traded, minus that trade's commission and spread. It orders the list; it is a ranking estimate, not a forecast.
 
 ## What you maintain (about 30 minutes a week)
 
 | File | When to update |
 |---|---|
-| `data/positions/positions.csv` | After you trade: `ticker, account_type, quantity, book_cost_acb_cad, as_of` |
-| `data/ledger/trades.csv` | One row per executed order. This is what the monthly caps count. Put the callout's ticker/date in `callout_ref` (or `none`). |
+| `data/positions/positions.csv` | Updated for you when you confirm trades. Edit by hand only to correct it: `ticker, account_type, quantity, book_cost_acb_cad, as_of` |
+| `data/ledger/trades.csv` | Filled in for you when you confirm trades. One row per executed order. This is what the monthly caps count. Put the callout's ticker/date in `callout_ref` (or `none`). |
 | `data/ledger/cash.csv` | Cash per account, with the date. Later trades and contributions are applied on top. |
 | `data/ledger/contributions.csv` | Contributions, withdrawals, dividends. |
 | `config/accounts.yaml` | TFSA and RRSP contribution room, once a year. |
@@ -26,6 +39,7 @@ Tickers use Yahoo format: `RY.TO`, `CTC-A.TO`, `RCI-B.TO`.
 | `daily.yml` | Mon to Fri 22:30 ET | Monitoring only: risk-label changes, structural breaks, data gaps, low-risk opportunity flags. Turn off with `schedule.daily.enabled: false` in `config/settings.yaml`. |
 | `news.yml` | Daily | Collects press releases and headlines into `artifacts/news/` and scores new headlines with FinBERT on CPU. Not used in callouts until the news features pass 26 weeks of shadow mode. |
 | `backtest.yml` | 1st of each month, or on demand | Replays history with the production code path, runs the naive baseline, DSR, PBO and the feature-group ablation, and writes `artifacts/backtest/latest/`. About 20 to 40 minutes. |
+| `confirm.yml` | When you open a `Confirm trades` issue | Records the trades in the ledger and positions, replies with the new balances, closes the issue. |
 | `ci.yml` | Every push and PR | Full test suite. |
 
 Failures, a missing weekly run, contribution-room warnings and IC divergence open a GitHub Issue.

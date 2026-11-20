@@ -11,7 +11,9 @@ import argparse
 import datetime as dt
 import html
 import json
+import os
 import sys
+import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -24,7 +26,7 @@ from pipeline import state as st  # noqa: E402
 
 NOTICES = [
     "Recommendations only. Not investment advice. The owner places all orders.",
-    "Not a trading portal: callouts are weekly and transaction-capped.",
+    "Not a trading portal: up to 10 trade suggestions a week, within monthly trade limits.",
     "Backtested figures carry survivorship bias: the universe is today's list plus a manual delisting log.",
     "Positions shown here are public by owner choice.",
 ]
@@ -53,6 +55,9 @@ details summary{cursor:pointer;list-style:none}details summary::-webkit-details-
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;display:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .bars{display:flex;gap:3px;align-items:flex-end;height:48px}.bars span{flex:1;background:var(--s1);border-radius:3px 3px 0 0;min-height:1px}
+.btn{display:inline-block;background:var(--accent);color:var(--bg);padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin:4px 10px 4px 0}
+.btn.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}h3{font-size:15px;margin:20px 0 6px}
+.pv{font-weight:600}
 @media (max-width:640px){td,th{padding:5px 4px}.hide-sm{display:none}}
 """
 
@@ -176,12 +181,37 @@ def callout_card(c: dict) -> str:
                  + " ".join(e(r) + "." for r in a["reasons"]) + "</p>")
     trade = (f'{e(c["account"])} · {c["shares"]} sh @ ~${c["est_price_cad"]:,.2f} · est. cost ${c["est_cost_cad"]:,.2f}'
              if is_action else (f'reason: {e(c["demoted_reason"])}' if c.get("demoted_reason") else ""))
+    pv = c.get("projected_value_cad")
+    if pv is not None:
+        trade = (f'<span class="pv">projected value {"+" if pv >= 0 else "−"}${abs(pv):,.0f}</span> '
+                 f'({signed(c.get("projected_return_3m"), ".1%")} over 3 months) · ' + trade)
     return f"""<details class="card co {'ACTION' if is_action else ''}"{open_attr}>
 <summary><b>#{c['rank']} {e(c['ticker'])}</b> <span class="cls">{e(c['class'])}</span> {tag(c['risk_label'])}
 <span class="muted">score {fmt_pct(c['score_pct'])} · {trade}</span><br><span>{e(c['rationale'])}</span></summary>
 <p class="muted">Risk breakdown: {dims}</p>
 <p class="muted">80% interval (next week): {ci_txt} · SHAP drivers: {shap or 'n/a'} · warnings: {e(', '.join(c['warnings']) or 'none')}</p>
 {addon}<table><tr><th>Check</th><th>Result</th><th>Detail</th></tr>{checks}</table></details>"""
+
+
+SIDE = {"ACTION_BUY_NEW": "BUY", "ACTION_ADD": "BUY", "ACTION_TRIM": "SELL", "ACTION_EXIT": "SELL"}
+
+
+def confirm_url(repo: str, cal: dict, fee: float) -> str:
+    """A link that opens a new GitHub issue pre-filled with this week's trades (see pipeline/confirm.py)."""
+    lines = [f"{SIDE[c['class']]} {c['account']} {c['ticker']} {c['shares']} @ {c['est_price_cad']:.2f} fee {fee:.2f}"
+             for c in cal["callouts"] if c["class"] in SIDE and c.get("account") and c.get("shares")]
+    body = ("Delete the lines for trades you did NOT make. Change shares, price and fee to match your broker's confirmation.\n"
+            "Add `on YYYY-MM-DD` to a line if you traded on an earlier day (otherwise today is used).\n"
+            "You can add other trades in the same format. Then press Submit: the files are updated within a few minutes.\n\n"
+            + ("\n".join(lines) if lines else "BUY TFSA TICKER.TO 10 @ 50.00 fee 9.95") + "\n")
+    q = urllib.parse.urlencode({"title": f"Confirm trades {cal['decision_date']}", "body": body})
+    return f"https://github.com/{repo}/issues/new?{q}"
+
+
+def mini_table(items: list[dict]) -> str:
+    rows = "".join(f"<tr><td><b>{e(c['ticker'])}</b></td><td class='cls'>{e(c['class'])}</td><td>{tag(c['risk_label'])}</td>"
+                   f"<td>{fmt_pct(c['score_pct'])}</td><td>{e(c['rationale'])}</td></tr>" for c in items)
+    return ("<table><tr><th>Ticker</th><th>Status</th><th>Risk</th><th>Score</th><th>Note</th></tr>" + rows + "</table>")
 
 
 def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
@@ -223,12 +253,28 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
              + "".join(f"<div class='banner'>{e(b)}</div>" for b in banners) + "</header><main>"]
 
     # 1. this week
-    parts.append("<h2 id='week'>This week's callouts</h2>")
+    parts.append("<h2 id='week'>This week's trade suggestions</h2>")
     if cal:
         parts.append(f"<p class='muted'>Decision date {e(cal['decision_date'])} · computed {e(cal['computed_at_utc'])} · "
                      f"run <span class='mono'>{e(cal['run_id'])[:8]}</span> · model card <span class='mono'>{e(cal['model_card_hash'])[:12]}</span>"
                      f"{' · ' + e(cal['list_note']) if cal.get('list_note') else ''}</p>")
+        n_act = sum(1 for c in cal["callouts"] if c["class"] in SIDE)
+        parts.append(f"<p>{n_act} to do this week (blue edge), best projected value first. The rest are good trades that don't fit "
+                     "this week's trade limit or cash, also by projected value. Projected value is the score turned into an expected "
+                     "3-month return on the amount traded, minus the commission: a ranking estimate, not a promise.</p>")
+        repo = os.environ.get("GITHUB_REPOSITORY") or (cfg["settings"].get("github") or {}).get("repository")
+        if repo and cal.get("status") == "published":
+            fee = float(cfg["settings"]["fees"]["per_trade_cad"])
+            blank = dict(cal, callouts=[])
+            parts.append(f"<p><a class='btn' href='{e(confirm_url(repo, cal, fee))}' target='_blank' rel='noopener'>Confirm trades I made</a>"
+                         f"<a class='btn alt' href='{e(confirm_url(repo, blank, fee))}' target='_blank' rel='noopener'>Record another trade</a>"
+                         "<br><span class='muted'>Opens a GitHub issue with the trades filled in. Delete what you didn't do, fix prices, "
+                         "submit. Your trades, holdings and cash update within a few minutes and the issue gets a summary.</span></p>")
         parts += [callout_card(c) for c in cal["callouts"]]
+        if cal.get("holdings_review"):
+            parts.append("<h3>Your other holdings</h3>" + mini_table(cal["holdings_review"]))
+        if cal.get("watchlist"):
+            parts.append("<h3>Watch list</h3>" + mini_table(cal["watchlist"]))
     # 2. budget
     parts.append("<h2 id='budget'>Account budget</h2><div class='grid'>")
     if cal:

@@ -138,13 +138,15 @@ def cross_check(positions: pd.DataFrame, trades: pd.DataFrame) -> list[str]:
     if trades.empty:
         return [] if positions.empty else ["ledger is empty; positions.csv taken as-is"]
     led = acb_from_ledger(trades)
+    traded = set(zip(led["account_type"], led["ticker"]))
     led = led[led["quantity"] > 0]
     a = positions.groupby(["account_type", "ticker"])["quantity"].sum()
     b = led.set_index(["account_type", "ticker"])["quantity"]
     warnings = []
-    for key in sorted(set(a.index) | set(b.index)):
+    # Holdings bought before the ledger started are opening positions: taken as-is.
+    for key in sorted(k for k in set(a.index) | set(b.index) if k in traded):
         qa, qb = float(a.get(key, 0.0)), float(b.get(key, 0.0))
-        if abs(qa - qb) > 1e-6:
+        if qb - qa > 1e-6:   # more shares in positions than the ledger explains = opening shares, fine
             warnings.append(f"{key[1]} in {key[0]}: positions.csv has {qa:g}, ledger implies {qb:g}")
     return warnings
 
