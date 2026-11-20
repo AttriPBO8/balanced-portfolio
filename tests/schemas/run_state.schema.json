@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "run_state.json",
+  "type": "object",
+  "required": [
+    "version",
+    "last_success",
+    "weekly"
+  ],
+  "properties": {
+    "last_success": {
+      "type": "object",
+      "required": [
+        "weekly",
+        "daily"
+      ],
+      "properties": {
+        "weekly": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "daily": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "weekly": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "status",
+          "run_id"
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "published",
+              "missed"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

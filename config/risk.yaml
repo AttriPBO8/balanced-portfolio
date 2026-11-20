@@ -1,0 +1,25 @@
+# §10.1 thresholds for the seven risk dimensions. Listed in tunable.yaml where tuning is allowed.
+R1_volatility:            # terciles of the universe (GARCH sigma)
+  low_quantile: 0.34
+  high_quantile: 0.67
+R2_vol_divergence:        # HAR-RV vs GARCH
+  low_abs: 0.15
+  high_har_above: 0.25
+R3_forecast_uncertainty:  # conformal 80% half-width (return units, conformal_horizon_days)
+  low_halfwidth: 0.05
+  high_halfwidth: 0.08
+R4_regime:
+  calm_prob_low: 0.70
+  stressed_prob_high: 0.60
+R5_structural_break:
+  recent_months: 6
+  window_months: 24
+R6_model_agreement:
+  min_rank_corr: 0.4
+R7_liquidity_data:
+  gap_high_days: 5
+  gap_moderate_days: 20
+composite:
+  low_min_low_count: 5
+  high_min_high_count: 3
+  high_if_any: [R5, R3, R7]

@@ -1,0 +1,100 @@
+# Main settings for the weekly stock callout system (REQUIREMENTS.md v2.0).
+# Every threshold here is a config value, not code. Change it here, commit, done.
+
+data:
+  mode: live                 # live | sample   (sample = synthetic prices, for tests and demos only)
+  start_date: 2021-01-01     # D-6: no pre-2021 data, including indicator warm-up
+  max_lookback_days: 126     # §6.1: v2 features use lookbacks <= 126 trading days
+  benchmark: XIC.TO          # S&P/TSX Composite proxy (measurement only, D-2)
+  benchmarks_extra: [XIU.TO] # S&P/TSX 60 proxy
+
+schedule:
+  timezone: America/Toronto
+  weekly:
+    enabled: true
+    day: SAT                 # decision date weekday
+    retry_day: SUN           # no-op if Saturday already published
+    max_catchup_weeks: 8
+  daily:
+    enabled: true            # D-8: on for the first 3 months
+    days: [MON, TUE, WED, THU, FRI]   # Option C: [WED]
+    until: null              # optional ISO date; daily jobs no-op after it
+    review_banner_after_days: 90
+
+callouts:
+  count: 25
+  holding_review_weeks: 4    # each holding shows up at least once every 4 weeks
+  buy_new_quantile: 0.85     # blended score percentile needed for a new-buy candidate
+  exit_quantile: 0.15        # held names ranked below this are exit candidates
+  watch_earnings_days: 5
+
+opportunity:
+  score_quantile: 0.30       # top 30%
+  pullback_from_high_min: 0.10
+  pullback_from_high_max: 0.25
+  below_50dma_sigma: 1.0
+  rsi_below: 35
+  negative_event_days: 20
+
+addon:
+  max_risk_contrib_increase: 0.05   # +5 percentage points
+  max_drawdown_garch_mult: 2.5
+  thesis_max_score_drop: 0.20       # 20 percentile points
+
+sizing:
+  new_position_cad: 1500     # target size of a new position
+  add_cad: 1000              # target size of an add-on buy
+  min_trade_cad: 500
+
+fees:
+  per_trade_cad: 9.95
+  half_spread_bps: 10
+  fx_bps: 150
+
+transaction_caps:
+  period: calendar_month
+  TFSA:   { max_per_month: 4 }
+  RRSP:   { max_per_month: 6 }
+  NONREG: { max_per_month: 6 }
+  weekly_spread: even        # even | front_loaded
+  risk_exit_over_cap: warn   # warn | allow | block
+  new_buy_account_order: [RRSP, TFSA, NONREG]
+
+starter_phase:
+  threshold_cad: 15000
+  measure: acb               # acb | market_value  (OD-3)
+  sector_cap_after: 0.35
+
+superficial_loss:
+  window_days: 30
+
+models:
+  seed: 42
+  label_horizon_days: 63     # ~3 months, ranker target and purge/embargo length
+  conformal_horizon_days: 5  # R3 interval horizon (one trading week)
+  conformal_coverage: 0.80
+  calibration_fraction: 0.2
+  blend: { w_lgbm: 0.6, w_ridge: 0.4 }
+  lgbm:
+    n_estimators: 200
+    learning_rate: 0.05
+    num_leaves: 15
+    min_child_samples: 50
+    subsample: 0.8
+    subsample_freq: 1
+    colsample_bytree: 0.8
+  ridge_alpha: 1.0
+  garch_lookback_days: 630
+  har_lookback_days: 500
+  pelt_penalty_mult: 3.0
+  cusum: { k: 0.5, h: 5.0 }
+  hmm_states: 2
+
+validation:
+  run_in_weekly: true
+  holdout_years: [2022]      # §13.2: whole-regime holdout
+  min_train_weeks: 26
+
+live_monitoring:
+  min_weeks: 8
+  ic_divergence: 0.10        # live IC below validation IC by more than this -> low confidence

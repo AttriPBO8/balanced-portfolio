@@ -1,0 +1,69 @@
+# §8.4 static sector mapping (owner-maintained; free sector feeds are inconsistent for TSX).
+RY.TO: Financials
+TD.TO: Financials
+BNS.TO: Financials
+BMO.TO: Financials
+CM.TO: Financials
+NA.TO: Financials
+MFC.TO: Financials
+SLF.TO: Financials
+GWO.TO: Financials
+IFC.TO: Financials
+POW.TO: Financials
+FFH.TO: Financials
+BN.TO: Financials
+BAM.TO: Financials
+X.TO: Financials
+ENB.TO: Energy
+TRP.TO: Energy
+PPL.TO: Energy
+CNQ.TO: Energy
+SU.TO: Energy
+CVE.TO: Energy
+IMO.TO: Energy
+TOU.TO: Energy
+ARX.TO: Energy
+CCO.TO: Energy
+CNR.TO: Industrials
+CP.TO: Industrials
+TFII.TO: Industrials
+WCN.TO: Industrials
+WSP.TO: Industrials
+STN.TO: Industrials
+CAE.TO: Industrials
+TIH.TO: Industrials
+ATD.TO: Consumer Staples
+L.TO: Consumer Staples
+MRU.TO: Consumer Staples
+SAP.TO: Consumer Staples
+DOL.TO: Consumer Discretionary
+CTC-A.TO: Consumer Discretionary
+QSR.TO: Consumer Discretionary
+GIL.TO: Consumer Discretionary
+MG.TO: Consumer Discretionary
+SHOP.TO: Information Technology
+CSU.TO: Information Technology
+OTEX.TO: Information Technology
+GIB-A.TO: Information Technology
+DSG.TO: Information Technology
+BCE.TO: Communication Services
+T.TO: Communication Services
+RCI-B.TO: Communication Services
+QBR-B.TO: Communication Services
+FTS.TO: Utilities
+EMA.TO: Utilities
+H.TO: Utilities
+AQN.TO: Utilities
+NTR.TO: Materials
+ABX.TO: Materials
+AEM.TO: Materials
+WPM.TO: Materials
+FNV.TO: Materials
+K.TO: Materials
+TECK-B.TO: Materials
+FM.TO: Materials
+LUN.TO: Materials
+IVN.TO: Materials
+CCL-B.TO: Materials
+FSV.TO: Real Estate
+CIGI.TO: Real Estate

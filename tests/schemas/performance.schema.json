@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "performance.json",
+  "type": "object",
+  "required": [
+    "run_id",
+    "as_of_utc",
+    "git_sha",
+    "model_card_hash",
+    "rank_ic_live",
+    "hit_rate_as_if",
+    "low_confidence"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "as_of_utc": {
+      "type": "string"
+    },
+    "git_sha": {
+      "type": "string"
+    },
+    "model_card_hash": {
+      "type": "string"
+    }
+  }
+}

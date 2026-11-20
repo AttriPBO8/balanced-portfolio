@@ -1,0 +1,15 @@
+# §11.4 per-stock checks. Enforced on every ACTION_BUY_NEW and ACTION_ADD.
+max_position:
+  pct_of_invested: 0.20
+  floor_cad: 3000          # whichever is larger (OD-4)
+risk_label_not: High
+liquidity:
+  min_median_traded_value_cad: 1000000
+  window_days: 60
+min_price: 2.0
+listing_history_days: 504  # ~2 years of trading days
+structural_break_months: 3
+pre_earnings_days: 5       # warn only
+negative_event_days: 20    # warn only, and only once T3-6 is admitted (§8.5)
+dividend_cut_months: 12    # warn only
+data_gap_days: 5           # block

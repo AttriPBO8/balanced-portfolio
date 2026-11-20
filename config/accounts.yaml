@@ -1,0 +1,4 @@
+# Owner-entered contribution room (§12.4). Update once a year from CRA My Account.
+TFSA:  { contribution_room_cad: 0, as_of: 2026-01-01 }
+RRSP:  { contribution_room_cad: 0, as_of: 2026-01-01 }
+NONREG: { enabled: false }   # OD-7

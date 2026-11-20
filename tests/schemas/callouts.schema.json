@@ -1,0 +1,380 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "callouts.json",
+  "type": "object",
+  "required": [
+    "run_id",
+    "as_of_utc",
+    "git_sha",
+    "model_card_hash",
+    "decision_date",
+    "computed_at_utc",
+    "status",
+    "catchup",
+    "confidence",
+    "callouts"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "as_of_utc": {
+      "type": "string"
+    },
+    "git_sha": {
+      "type": "string"
+    },
+    "model_card_hash": {
+      "type": "string"
+    },
+    "decision_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "computed_at_utc": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "published",
+        "missed"
+      ]
+    },
+    "catchup": {
+      "type": "boolean"
+    },
+    "confidence": {
+      "enum": [
+        "normal",
+        "low"
+      ]
+    },
+    "data_mode": {
+      "enum": [
+        "live",
+        "sample"
+      ]
+    },
+    "starter_phase": {
+      "type": "object",
+      "required": [
+        "active",
+        "invested_cad",
+        "threshold_cad"
+      ]
+    },
+    "regime": {
+      "type": "object",
+      "required": [
+        "label",
+        "stressed_prob"
+      ],
+      "properties": {
+        "label": {
+          "enum": [
+            "calm",
+            "neutral",
+            "stressed"
+          ]
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "cap",
+          "used",
+          "remaining",
+          "weekly_allowance"
+        ],
+        "properties": {
+          "cap": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "weekly_allowance": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "overrides_active": {
+      "type": "array"
+    },
+    "callouts": {
+      "type": "array",
+      "maxItems": 25,
+      "items": {
+        "type": "object",
+        "required": [
+          "rank",
+          "ticker",
+          "class",
+          "account",
+          "shares",
+          "est_price_cad",
+          "est_cost_cad",
+          "score_pct",
+          "risk_label",
+          "risk_breakdown",
+          "checks",
+          "addon",
+          "shap_top_features",
+          "conformal_interval_80",
+          "warnings",
+          "demoted_reason",
+          "rationale"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ticker": {
+            "type": "string"
+          },
+          "class": {
+            "enum": [
+              "ACTION_BUY_NEW",
+              "ACTION_ADD",
+              "ACTION_TRIM",
+              "ACTION_EXIT",
+              "OPPORTUNITY",
+              "WATCH",
+              "HOLD_OK"
+            ]
+          },
+          "account": {
+            "enum": [
+              "TFSA",
+              "RRSP",
+              "NONREG",
+              null
+            ]
+          },
+          "shares": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "est_price_cad": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "est_cost_cad": {
+            "type": "number"
+          },
+          "score_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "risk_label": {
+            "enum": [
+              "Low",
+              "Moderate",
+              "High"
+            ]
+          },
+          "risk_breakdown": {
+            "type": "object",
+            "required": [
+              "R1",
+              "R2",
+              "R3",
+              "R4",
+              "R5",
+              "R6",
+              "R7"
+            ],
+            "properties": {
+              "R1": {
+                "enum": [
+                  "Low",
+                  "Moderate",
+                  "High"
+                ]
+              },
+              "R2": {
+                "enum": [
+                  "Low",
+                  "Moderate",
+                  "High"
+                ]
+              },
+              "R3": {
+                "enum": [
+                  "Low",
+                  "Moderate",
+                  "High"
+                ]
+              },
+              "R4": {
+                "enum": [
+                  "Low",
+                  "Moderate",
+                  "High"
+                ]
+              },
+              "R5": {
+                "enum": [
+                  "Low",
+                  "Moderate",
+                  "High"
+                ]
+              },
+              "R6": {
+                "enum": [
+                  "Low",
+                  "Moderate",
+                  "High"
+                ]
+              },
+              "R7": {
+                "enum": [
+                  "Low",
+                  "Moderate",
+                  "High"
+                ]
+              }
+            }
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "result",
+                "detail"
+              ],
+              "properties": {
+                "result": {
+                  "enum": [
+                    "pass",
+                    "warn",
+                    "fail",
+                    "n/a"
+                  ]
+                }
+              }
+            }
+          },
+          "addon": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "new_acb_cad",
+                  "new_weight",
+                  "risk_contrib_change",
+                  "thesis_intact",
+                  "verdict",
+                  "reasons"
+                ],
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "AVERAGE_DOWN",
+                      "AVERAGE_UP"
+                    ]
+                  },
+                  "verdict": {
+                    "enum": [
+                      "HELPS",
+                      "NEUTRAL",
+                      "DOES_NOT_HELP"
+                    ]
+                  },
+                  "reasons": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "shap_top_features": {
+            "type": "array"
+          },
+          "conformal_interval_80": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "demoted_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "published"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "starter_phase",
+          "regime",
+          "budgets",
+          "overrides_active"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "missed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "callouts": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "model_card.json",
+  "type": "object",
+  "required": [
+    "run_id",
+    "as_of_utc",
+    "git_sha",
+    "model_card_hash",
+    "versions",
+    "params",
+    "blend_weights",
+    "feature_set",
+    "feature_groups",
+    "catchup_log",
+    "delisting_log_hash"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "as_of_utc": {
+      "type": "string"
+    },
+    "git_sha": {
+      "type": "string"
+    },
+    "model_card_hash": {
+      "type": "string"
+    },
+    "feature_set": {
+      "type": "object",
+      "required": [
+        "version",
+        "features",
+        "hash"
+      ]
+    }
+  }
+}

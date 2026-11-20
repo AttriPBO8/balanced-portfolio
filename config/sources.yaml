@@ -1,0 +1,50 @@
+# §9 free data sources. Limits are read from here; a source that refuses or throttles is
+# logged and skipped, and the run keeps going.
+yfinance:
+  enabled: true
+  retries: 4
+  backoff_seconds: 2
+  earnings_limit: 16
+boc_valet:
+  enabled: true
+  base_url: https://www.bankofcanada.ca/valet/observations
+  series:
+    policy_rate: V39079
+    goc_2y: BD.CDN.2YR.DQ.YLD
+    goc_10y: BD.CDN.10YR.DQ.YLD
+    usdcad: FXUSDCAD
+  release_lag_days: 1
+fred:
+  enabled: true
+  base_url: https://fred.stlouisfed.org/graph/fredgraph.csv
+  series:
+    vix: VIXCLS
+    us_10y: DGS10
+    us_2y: DGS2
+    wti: DCOILWTICO
+  release_lag_days: 1
+statcan:
+  enabled: true
+  url: https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods
+  vectors:
+    cpi: 41690973
+    unemployment: 2062815
+  latest_n: 72
+  release_lag_days: 45        # used when the API gives no release time
+commodities_yf:
+  gold: GC=F
+  copper: HG=F
+news:
+  enabled: true
+  user_agent: "balanced-portfolio-callouts/0.1 (research; low frequency)"
+  newsfile_rss: https://feeds.newsfilecorp.com/global/Last25Stories
+  globenewswire_rss: []       # OD-5: add verified per-exchange feed URLs here
+  google_news:
+    enabled: true
+    url: https://news.google.com/rss/search
+    max_per_day_per_ticker: 1
+    sleep_seconds: 1.0
+  yfinance_news: true
+excluded:                     # §9.2: never accessed automatically
+  - sedarplus.ca
+  - money.tmx.com
