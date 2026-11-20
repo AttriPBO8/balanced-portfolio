@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from common.dates import trading_index, trading_days, iso_utc, utc_now
+from common.dates import trading_index, iso_utc, utc_now
 
 log = logging.getLogger(__name__)
 FIELDS = ("open", "high", "low", "close", "adj_close", "volume")

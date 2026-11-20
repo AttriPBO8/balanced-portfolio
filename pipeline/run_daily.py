@@ -27,7 +27,7 @@ from common.io import StagedWrite, git_sha, new_run_id
 from features.snapshot import features_at
 from ingest.prices import data_gaps, make_source
 from models.breaks import cusum_last_break
-from models.risk import DIMS, composite
+from models.risk import composite
 from models.volatility import universe_vols
 from pipeline import state as st
 from pipeline.alerts import Alerts

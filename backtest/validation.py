@@ -4,9 +4,9 @@ Folds are calendar years. For each test year the training set holds only rows wh
 window ends before the test year starts minus an embargo equal to the label horizon. The
 2022 rate-shock year is one whole held-out fold.
 
-Implemented: rank IC per fold and overall for M1, M2 and the blend.
-TODO(P4): Deflated Sharpe Ratio and Probability of Backtest Overfitting (CSCV); feature-group
-ablation table (§8.5); add-on verdict audit (§13.4).
+Implemented: rank IC per fold and overall for M1, M2 and the blend, and the feature-group
+ablation table (§8.5, §13.4). DSR and PBO live in backtest.stats and are computed by the
+backtest replay (backtest.replay), which has the strategy and variant return series.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def _ic_by_date(scores: pd.Series, y: pd.Series) -> pd.Series:
     return pd.Series(out, dtype=float)
 
 
-def purged_walk_forward(feats: pd.DataFrame, y: pd.Series, cfg: dict) -> dict:
+def purged_walk_forward(feats: pd.DataFrame, y: pd.Series, cfg: dict, features: list[str] | None = None) -> dict:
     m = cfg["settings"]["models"]
     v = cfg["settings"]["validation"]
     h = int(m["label_horizon_days"])
@@ -37,7 +37,7 @@ def purged_walk_forward(feats: pd.DataFrame, y: pd.Series, cfg: dict) -> dict:
     feats, y = feats[ok], y[ok]
     dates = feats.index.get_level_values("date")
     years = sorted(set(dates.year))
-    X = cross_sectional_rank(feats, MODEL_FEATURES)
+    X = cross_sectional_rank(feats, features or MODEL_FEATURES)
     target = y.groupby(level="date").rank(pct=True)
     folds, all_ic = [], {"m1": [], "m2": [], "blend": []}
     for yr in years:
@@ -72,4 +72,25 @@ def purged_walk_forward(feats: pd.DataFrame, y: pd.Series, cfg: dict) -> dict:
     summary = {k: (float(np.mean(v_)) if v_ else None) for k, v_ in all_ic.items()}
     return {"method": "purged_walk_forward_yearly", "embargo_days": int(embargo.days), "label_horizon_days": h,
             "folds": folds, "mean_ic": summary, "dsr": None, "pbo": None,
-            "todo": ["DSR and PBO (CSCV) not implemented yet (P4)", "feature-group ablation (P8)"]}
+            "features": features or MODEL_FEATURES}
+
+
+FEATURE_GROUPS = {
+    "momentum": ["mom_20d", "mom_60d", "mom_126d", "rev_5d"],
+    "volatility_beta": ["vol_20d", "vol_60d", "beta_126d"],
+    "technical": ["dist_126d_high", "dist_50dma", "rsi_14"],
+    "earnings_t3": ["days_to_earnings", "last_surprise", "post_earn_drift_5d"],
+}
+
+
+def ablation(feats: pd.DataFrame, y: pd.Series, cfg: dict) -> dict:
+    """Mean walk-forward blend IC with all features vs with each group removed (§8.5).
+    A positive `ic_drop` means the group helps."""
+    full = purged_walk_forward(feats, y, cfg)["mean_ic"]["blend"]
+    rows = []
+    for g, cols in FEATURE_GROUPS.items():
+        keep = [f for f in MODEL_FEATURES if f not in cols]
+        ic = purged_walk_forward(feats, y, cfg, keep)["mean_ic"]["blend"]
+        rows.append({"group": g, "features": cols, "ic_without": ic,
+                     "ic_drop": (full - ic) if (full is not None and ic is not None) else None})
+    return {"ic_all": full, "groups": rows}

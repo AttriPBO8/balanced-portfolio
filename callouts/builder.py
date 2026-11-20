@@ -5,7 +5,6 @@ import datetime as dt
 import math
 from dataclasses import dataclass, field
 
-import numpy as np
 import pandas as pd
 
 from callouts import addon as addon_mod
@@ -356,7 +355,7 @@ class Builder:
 
     # ------------------------------------------------------------------ text
     def _rationale(self, co) -> str:
-        t, cls = co["ticker"], co["class"]
+        cls = co["class"]
         s = co["score_pct"]
         parts = []
         top = f"top {max(1 - s, 0.01):.0%}" if s >= 0.5 else f"bottom {max(s, 0.01):.0%}"

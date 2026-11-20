@@ -6,7 +6,7 @@ recent items and there is no free archive to rebuild from). Each item stores
 `published_utc` (from the source) and `first_seen_utc` (when we fetched it) (§7.2).
 
 These features are NOT used for callouts yet. They enter production only through the
-26-week shadow-mode forward path (§8.5). TODO(P8): FinBERT scoring and shadow counter.
+26-week shadow-mode forward path (§8.5): see ingest/finbert.py and features/news.py.
 """
 from __future__ import annotations
 
