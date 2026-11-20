@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+data/raw/*
+!data/raw/.gitkeep
+.staging/
+.alerts/
+_site/
+sample-run/
+.venv/
