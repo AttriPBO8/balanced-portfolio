@@ -19,6 +19,10 @@ Delete the lines you did not trade, correct shares, price and fee, and submit. T
 
 **Projected value** is the blended score turned into an expected 3-month return with Grinold's rule (`projection_ic` x the stock's 3-month volatility x the score as a z-score), times the amount traded, minus that trade's commission and spread. It orders the list; it is a ranking estimate, not a forecast.
 
+## High-risk ideas
+
+A separate weekly list (`settings.high_risk`, up to 10) of the stocks the models expect to rise most next week that the main list leaves out. They may have a High risk label, a recent structural break, earnings next week or a size/sector breach; data-quality checks (liquidity, price, history, data gaps) still apply. Each has a **target price for one week** (price x (1 + the calibrated 5-day expected return from M6)) and the 80% conformal range, and says why it is outside the main list. Not actions: no shares, no account, not counted in the caps. In `callouts.json` as `high_risk_ideas`.
+
 ## What you maintain (about 30 minutes a week)
 
 | File | When to update |

@@ -214,6 +214,19 @@ def mini_table(items: list[dict]) -> str:
     return ("<table><tr><th>Ticker</th><th>Status</th><th>Risk</th><th>Score</th><th>Note</th></tr>" + rows + "</table>")
 
 
+def high_risk_table(items: list[dict]) -> str:
+    rows = "".join(
+        f"<tr><td>{x['rank']}</td><td><b>{e(x['ticker'])}</b>{' <span class=muted>(held)</span>' if x.get('held') else ''}</td>"
+        f"<td>${x['price_cad']:,.2f}</td><td><b>${x['target_price_1w']:,.2f}</b></td>"
+        f"<td class='hide-sm'>${x['range_80_1w'][0]:,.2f} to ${x['range_80_1w'][1]:,.2f}</td>"
+        f"<td>{signed(x['expected_return_1w'], '.1%')}</td><td class='hide-sm'>{fmt_pct(x['score_pct'])}</td>"
+        f"<td>{tag(x['risk_label'])}</td><td class='hide-sm muted'>{e('; '.join(x['outside_criteria']))}</td></tr>"
+        for x in items)
+    return ("<table><tr><th>#</th><th>Ticker</th><th>Price</th><th>Target, 1 week</th><th class='hide-sm'>80% range</th>"
+            "<th>Expected</th><th class='hide-sm'>Score</th><th>Risk</th><th class='hide-sm'>Outside the main list because</th></tr>"
+            + rows + "</table>")
+
+
 def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
     cfg = load_config(root)
     now = now or utc_now()
@@ -247,7 +260,7 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
 
     parts = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
              f"<title>Weekly Stock Callouts</title><style>{CSS}</style></head><body><header><h1>Weekly stock callouts</h1>"
-             "<nav><a href='#week'>This week</a><a href='#budget'>Account budget</a><a href='#risk'>Risk posture</a>"
+             "<nav><a href='#week'>This week</a><a href='#highrisk'>High-risk ideas</a><a href='#budget'>Account budget</a><a href='#risk'>Risk posture</a>"
              "<a href='#perf'>Performance</a><a href='#backtest'>Backtest</a><a href='#history'>History</a><a href='#health'>Run health</a></nav>"
              "<div class='notices'>" + "<br>".join(e(n) for n in NOTICES) + "</div>"
              + "".join(f"<div class='banner'>{e(b)}</div>" for b in banners) + "</header><main>"]
@@ -275,6 +288,15 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
             parts.append("<h3>Your other holdings</h3>" + mini_table(cal["holdings_review"]))
         if cal.get("watchlist"):
             parts.append("<h3>Watch list</h3>" + mini_table(cal["watchlist"]))
+    if cal and cal.get("high_risk_ideas") is not None:
+        parts.append("<h2 id='highrisk'>High-risk ideas for next week</h2>"
+                     "<div class='banner'>Separate from the 10 suggestions and <b>not</b> checked the same way: these may have a High "
+                     "risk label, a recent structural break, earnings next week, or break the size or sector limits. They are the "
+                     "stocks the models expect to rise most next week. The target is the expected price in one week; 4 times in 5 "
+                     "the price should land inside the range. Not counted in your trade limits. If you buy one, record it with "
+                     "Record another trade.</div>")
+        parts.append(high_risk_table(cal["high_risk_ideas"]) if cal["high_risk_ideas"] else
+                     "<p class='muted'>No stock met the bar this week (expected rise next week and a score in the top half).</p>")
     # 2. budget
     parts.append("<h2 id='budget'>Account budget</h2><div class='grid'>")
     if cal:
