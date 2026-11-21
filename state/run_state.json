@@ -2,8 +2,14 @@
   "first_run_date": "2026-11-19",
   "last_success": {
     "daily": "2026-11-20",
-    "weekly": null
+    "weekly": "2026-11-21"
   },
   "version": 1,
-  "weekly": {}
+  "weekly": {
+    "2026-11-21": {
+      "input_hash": "f48457e52f4cd33dca7ca41c4a4cd314196a552df5b2f5d6b3c6f571984cc3b0",
+      "run_id": "b4dca1a3-d3d2-5d73-999d-04fd15c00445",
+      "status": "published"
+    }
+  }
 }

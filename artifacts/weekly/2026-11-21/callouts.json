@@ -1,0 +1,1196 @@
+{
+  "as_of_utc": "2026-11-21T17:00:38Z",
+  "budget_history": {
+    "RRSP": [
+      {
+        "cap": 6,
+        "month": "2025-12",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-01",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-02",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-03",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-04",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-05",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-06",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-07",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-08",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-09",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-10",
+        "used": 0
+      },
+      {
+        "cap": 6,
+        "month": "2026-11",
+        "used": 0
+      }
+    ],
+    "TFSA": [
+      {
+        "cap": 4,
+        "month": "2025-12",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-01",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-02",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-03",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-04",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-05",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-06",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-07",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-08",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-09",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-10",
+        "used": 0
+      },
+      {
+        "cap": 4,
+        "month": "2026-11",
+        "used": 0
+      }
+    ]
+  },
+  "budgets": {
+    "RRSP": {
+      "cap": 6,
+      "month": "2026-11",
+      "remaining": 6,
+      "used": 0,
+      "weekly_allowance": 3
+    },
+    "TFSA": {
+      "cap": 4,
+      "month": "2026-11",
+      "remaining": 4,
+      "used": 0,
+      "weekly_allowance": 2
+    }
+  },
+  "callouts": [
+    {
+      "account": "TFSA",
+      "addon": null,
+      "checks": [
+        {
+          "detail": "after trade $986 (58%) vs limit $3,000 (20% or $3,000, whichever is larger)",
+          "name": "max_position",
+          "result": "pass"
+        },
+        {
+          "detail": "composite risk High",
+          "name": "risk_label",
+          "result": "fail"
+        },
+        {
+          "detail": "median daily traded value $282,391,174 vs floor $1,000,000",
+          "name": "liquidity",
+          "result": "pass"
+        },
+        {
+          "detail": "price $197.27 vs $2.00",
+          "name": "min_price",
+          "result": "pass"
+        },
+        {
+          "detail": "1478 trading days of price data (need 504)",
+          "name": "listing_history",
+          "result": "pass"
+        },
+        {
+          "detail": "no break detected",
+          "name": "structural_break",
+          "result": "pass"
+        },
+        {
+          "detail": "no earnings date known",
+          "name": "pre_earnings",
+          "result": "pass"
+        },
+        {
+          "detail": "event feature in shadow mode (not admitted yet, §8.5)",
+          "name": "negative_event",
+          "result": "n/a"
+        },
+        {
+          "detail": "no dividend cut",
+          "name": "dividend_cut",
+          "result": "pass"
+        },
+        {
+          "detail": "no gap in 20 days",
+          "name": "data_gap",
+          "result": "pass"
+        },
+        {
+          "detail": "starter phase: sector caps off (D-7)",
+          "name": "sector_cap",
+          "result": "n/a"
+        },
+        {
+          "detail": "no recent NONREG loss sale",
+          "name": "superficial_loss",
+          "result": "pass"
+        }
+      ],
+      "class": "ACTION_EXIT",
+      "conformal_interval_80": [
+        -0.033079,
+        0.042276
+      ],
+      "demoted_reason": null,
+      "est_cost_cad": 10.94,
+      "est_price_cad": 197.270004,
+      "held": true,
+      "m1_pct": 0.1029,
+      "m2_pct": 0.1471,
+      "priority": 1000000003.292376,
+      "projected_return_3m": -0.0144,
+      "projected_value_cad": 3.29,
+      "rank": 1,
+      "rationale": "Exit 5 shares in the TFSA: score has fallen to the bottom 10%.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "Low",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_driven": true,
+      "risk_label": "High",
+      "score_pct": 0.0956,
+      "sector": "Financials",
+      "shap_top_features": [
+        {
+          "feature": "beta_126d",
+          "raw": 1.008163,
+          "value": -0.029714
+        },
+        {
+          "feature": "mom_126d",
+          "raw": -0.056856,
+          "value": -0.02321
+        },
+        {
+          "feature": "vol_20d",
+          "raw": 0.236718,
+          "value": -0.018327
+        }
+      ],
+      "shares": 5,
+      "ticker": "NA.TO",
+      "warnings": []
+    },
+    {
+      "account": "TFSA",
+      "addon": null,
+      "checks": [
+        {
+          "detail": "after trade $1,052 (62%) vs limit $3,000 (20% or $3,000, whichever is larger)",
+          "name": "max_position",
+          "result": "pass"
+        },
+        {
+          "detail": "composite risk High",
+          "name": "risk_label",
+          "result": "fail"
+        },
+        {
+          "detail": "median daily traded value $203,968,673 vs floor $1,000,000",
+          "name": "liquidity",
+          "result": "pass"
+        },
+        {
+          "detail": "price $175.38 vs $2.00",
+          "name": "min_price",
+          "result": "pass"
+        },
+        {
+          "detail": "1478 trading days of price data (need 504)",
+          "name": "listing_history",
+          "result": "pass"
+        },
+        {
+          "detail": "no break detected",
+          "name": "structural_break",
+          "result": "pass"
+        },
+        {
+          "detail": "no earnings date known",
+          "name": "pre_earnings",
+          "result": "pass"
+        },
+        {
+          "detail": "event feature in shadow mode (not admitted yet, §8.5)",
+          "name": "negative_event",
+          "result": "n/a"
+        },
+        {
+          "detail": "no dividend cut",
+          "name": "dividend_cut",
+          "result": "pass"
+        },
+        {
+          "detail": "no gap in 20 days",
+          "name": "data_gap",
+          "result": "pass"
+        },
+        {
+          "detail": "starter phase: sector caps off (D-7)",
+          "name": "sector_cap",
+          "result": "n/a"
+        },
+        {
+          "detail": "no recent NONREG loss sale",
+          "name": "superficial_loss",
+          "result": "pass"
+        }
+      ],
+      "class": "ACTION_TRIM",
+      "conformal_interval_80": [
+        -0.029528,
+        0.039861
+      ],
+      "demoted_reason": null,
+      "est_cost_cad": 10.48,
+      "est_price_cad": 175.380005,
+      "held": true,
+      "m1_pct": 0.6912,
+      "m2_pct": 0.2206,
+      "priority": 999999989.622454,
+      "projected_return_3m": -0.0002,
+      "projected_value_cad": -10.38,
+      "rank": 2,
+      "rationale": "Trim 3 shares in the TFSA: risk High, score bottom 49%.",
+      "risk_breakdown": {
+        "R1": "Low",
+        "R2": "Low",
+        "R3": "Low",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "High",
+        "R7": "Low"
+      },
+      "risk_driven": true,
+      "risk_label": "High",
+      "score_pct": 0.4853,
+      "sector": "Industrials",
+      "shap_top_features": [
+        {
+          "feature": "vol_20d",
+          "raw": 0.214365,
+          "value": -0.020795
+        },
+        {
+          "feature": "beta_126d",
+          "raw": 0.471529,
+          "value": 0.019681
+        },
+        {
+          "feature": "mom_126d",
+          "raw": 0.123566,
+          "value": 0.019108
+        }
+      ],
+      "shares": 3,
+      "ticker": "CNR.TO",
+      "warnings": []
+    }
+  ],
+  "cash_cad": {
+    "RRSP": 1500.0,
+    "TFSA": 1500.0
+  },
+  "catchup": false,
+  "computed_at_utc": "2026-11-21T16:59:52Z",
+  "confidence": "normal",
+  "contribution_room": {
+    "RRSP": {
+      "as_of": "2026-01-01",
+      "contributed_since_cad": 0.0,
+      "estimated_remaining_cad": 2500.0,
+      "note": null,
+      "room_entered_cad": 2500.0,
+      "warnings": []
+    },
+    "TFSA": {
+      "as_of": "2026-01-01",
+      "contributed_since_cad": 0.0,
+      "estimated_remaining_cad": 2500.0,
+      "note": null,
+      "room_entered_cad": 2500.0,
+      "warnings": []
+    }
+  },
+  "data_mode": "live",
+  "decision_date": "2026-11-21",
+  "git_sha": "b6a1f3122dd7c6bcd5f524ff833ba9b9c14c8830",
+  "high_risk_ideas": [
+    {
+      "expected_return_1w": 0.009,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 26.1,
+      "projected_return_3m": 0.0393,
+      "range_80_1w": [
+        23.53,
+        29.14
+      ],
+      "rank": 1,
+      "rationale": "Expected +0.9% next week: target $26.33 from $26.10 (80% range $23.53 to $29.14). Score 99%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "High",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.9853,
+      "sector": "Materials",
+      "shap_top_features": [
+        {
+          "feature": "vol_60d",
+          "raw": 0.596513,
+          "value": 0.070227
+        },
+        {
+          "feature": "dist_126d_high",
+          "raw": -0.463956,
+          "value": 0.053945
+        },
+        {
+          "feature": "dist_50dma",
+          "raw": -0.29919,
+          "value": -0.028025
+        }
+      ],
+      "target_price_1w": 26.33,
+      "ticker": "FM.TO"
+    },
+    {
+      "expected_return_1w": 0.0071,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 177.09,
+      "projected_return_3m": 0.0408,
+      "range_80_1w": [
+        160.39,
+        196.29
+      ],
+      "rank": 2,
+      "rationale": "Expected +0.7% next week: target $178.34 from $177.09 (80% range $160.39 to $196.29). Score 100%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Low",
+        "R3": "High",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 1.0,
+      "sector": "Information Technology",
+      "shap_top_features": [
+        {
+          "feature": "vol_60d",
+          "raw": 0.562717,
+          "value": 0.075399
+        },
+        {
+          "feature": "mom_126d",
+          "raw": 0.242737,
+          "value": 0.037645
+        },
+        {
+          "feature": "vol_20d",
+          "raw": 0.591165,
+          "value": 0.029377
+        }
+      ],
+      "target_price_1w": 178.34,
+      "ticker": "SHOP.TO"
+    },
+    {
+      "expected_return_1w": 0.0071,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 47.32,
+      "projected_return_3m": 0.018,
+      "range_80_1w": [
+        42.86,
+        52.46
+      ],
+      "rank": 3,
+      "rationale": "Expected +0.7% next week: target $47.66 from $47.32 (80% range $42.86 to $52.46). Score 94%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "High",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.9412,
+      "sector": "Consumer Discretionary",
+      "shap_top_features": [
+        {
+          "feature": "vol_60d",
+          "raw": 0.563164,
+          "value": 0.087215
+        },
+        {
+          "feature": "mom_126d",
+          "raw": -0.408346,
+          "value": -0.0565
+        },
+        {
+          "feature": "dist_126d_high",
+          "raw": -0.451373,
+          "value": 0.043759
+        }
+      ],
+      "target_price_1w": 47.66,
+      "ticker": "GIL.TO"
+    },
+    {
+      "expected_return_1w": 0.007,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 24.81,
+      "projected_return_3m": 0.0281,
+      "range_80_1w": [
+        22.61,
+        27.36
+      ],
+      "rank": 4,
+      "rationale": "Expected +0.7% next week: target $24.98 from $24.81 (80% range $22.61 to $27.36). Score 97%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "High",
+        "R4": "High",
+        "R5": "Moderate",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.9706,
+      "sector": "Materials",
+      "shap_top_features": [
+        {
+          "feature": "vol_60d",
+          "raw": 0.531122,
+          "value": 0.046472
+        },
+        {
+          "feature": "vol_20d",
+          "raw": 0.616852,
+          "value": 0.028455
+        },
+        {
+          "feature": "dist_126d_high",
+          "raw": -0.461624,
+          "value": 0.028426
+        }
+      ],
+      "target_price_1w": 24.98,
+      "ticker": "K.TO"
+    },
+    {
+      "expected_return_1w": 0.0068,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 6.3,
+      "projected_return_3m": 0.0225,
+      "range_80_1w": [
+        5.72,
+        6.97
+      ],
+      "rank": 5,
+      "rationale": "Expected +0.7% next week: target $6.34 from $6.30 (80% range $5.72 to $6.97). Score 91%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "High",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Moderate",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.9118,
+      "sector": "Materials",
+      "shap_top_features": [
+        {
+          "feature": "dist_126d_high",
+          "raw": -0.531946,
+          "value": 0.077408
+        },
+        {
+          "feature": "mom_126d",
+          "raw": -0.457364,
+          "value": -0.063921
+        },
+        {
+          "feature": "vol_60d",
+          "raw": 0.549136,
+          "value": 0.058604
+        }
+      ],
+      "target_price_1w": 6.34,
+      "ticker": "IVN.TO"
+    },
+    {
+      "expected_return_1w": 0.0068,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 83.11,
+      "projected_return_3m": 0.0145,
+      "range_80_1w": [
+        76.76,
+        90.59
+      ],
+      "rank": 6,
+      "rationale": "Expected +0.7% next week: target $83.68 from $83.11 (80% range $76.76 to $90.59). Score 87%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Low",
+        "R3": "High",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Moderate",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.8676,
+      "sector": "Energy",
+      "shap_top_features": [
+        {
+          "feature": "mom_126d",
+          "raw": -0.425361,
+          "value": -0.073631
+        },
+        {
+          "feature": "dist_126d_high",
+          "raw": -0.501918,
+          "value": 0.051425
+        },
+        {
+          "feature": "vol_20d",
+          "raw": 0.589952,
+          "value": 0.043507
+        }
+      ],
+      "target_price_1w": 83.68,
+      "ticker": "CCO.TO"
+    },
+    {
+      "expected_return_1w": 0.0061,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 38.87,
+      "projected_return_3m": 0.0093,
+      "range_80_1w": [
+        36.61,
+        41.61
+      ],
+      "rank": 7,
+      "rationale": "Expected +0.6% next week: target $39.11 from $38.87 (80% range $36.61 to $41.61). Score 85%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "Moderate",
+        "R2": "Moderate",
+        "R3": "Moderate",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.8529,
+      "sector": "Energy",
+      "shap_top_features": [
+        {
+          "feature": "mom_60d",
+          "raw": -0.105663,
+          "value": 0.020117
+        },
+        {
+          "feature": "mom_126d",
+          "raw": -0.053168,
+          "value": -0.018254
+        },
+        {
+          "feature": "dist_50dma",
+          "raw": -0.111795,
+          "value": 0.011071
+        }
+      ],
+      "target_price_1w": 39.11,
+      "ticker": "CVE.TO"
+    },
+    {
+      "expected_return_1w": 0.006,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 216.67,
+      "projected_return_3m": 0.0225,
+      "range_80_1w": [
+        198.25,
+        237.67
+      ],
+      "rank": 8,
+      "rationale": "Expected +0.6% next week: target $217.96 from $216.67 (80% range $198.25 to $237.67). Score 96%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "High",
+        "R4": "High",
+        "R5": "Moderate",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.9559,
+      "sector": "Materials",
+      "shap_top_features": [
+        {
+          "feature": "vol_60d",
+          "raw": 0.504927,
+          "value": 0.039616
+        },
+        {
+          "feature": "vol_20d",
+          "raw": 0.65492,
+          "value": 0.031366
+        },
+        {
+          "feature": "beta_126d",
+          "raw": 2.677475,
+          "value": 0.026305
+        }
+      ],
+      "target_price_1w": 217.96,
+      "ticker": "AEM.TO"
+    },
+    {
+      "expected_return_1w": 0.0057,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 128.35,
+      "projected_return_3m": 0.011,
+      "range_80_1w": [
+        120.61,
+        137.54
+      ],
+      "rank": 9,
+      "rationale": "Expected +0.6% next week: target $129.08 from $128.35 (80% range $120.61 to $137.54). Score 90%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "Moderate",
+        "R2": "Low",
+        "R3": "Moderate",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.8971,
+      "sector": "Real Estate",
+      "shap_top_features": [
+        {
+          "feature": "vol_60d",
+          "raw": 0.366069,
+          "value": 0.020746
+        },
+        {
+          "feature": "mom_60d",
+          "raw": -0.112992,
+          "value": 0.018392
+        },
+        {
+          "feature": "beta_126d",
+          "raw": 0.581588,
+          "value": 0.018315
+        }
+      ],
+      "target_price_1w": 129.08,
+      "ticker": "CIGI.TO"
+    },
+    {
+      "expected_return_1w": 0.0056,
+      "held": false,
+      "outside_criteria": [
+        "risk label: composite risk High"
+      ],
+      "price_cad": 69.39,
+      "projected_return_3m": 0.0239,
+      "range_80_1w": [
+        63.76,
+        75.8
+      ],
+      "rank": 10,
+      "rationale": "Expected +0.6% next week: target $69.78 from $69.39 (80% range $63.76 to $75.80). Score 93%, risk High. Outside the main list because: risk label: composite risk High.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "High",
+        "R4": "High",
+        "R5": "Low",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.9265,
+      "sector": "Materials",
+      "shap_top_features": [
+        {
+          "feature": "vol_60d",
+          "raw": 0.481444,
+          "value": 0.045856
+        },
+        {
+          "feature": "beta_126d",
+          "raw": 2.520416,
+          "value": 0.039648
+        },
+        {
+          "feature": "vol_20d",
+          "raw": 0.62441,
+          "value": 0.036232
+        }
+      ],
+      "target_price_1w": 69.78,
+      "ticker": "TECK-B.TO"
+    }
+  ],
+  "holdings_review": [],
+  "list_note": "only 2 trade ideas met the criteria out of 68 stocks scored; the list is not padded",
+  "model_card_hash": "58624b6f4325640748b47a5aee846eb8133ec1b6c0d64437f58cf82167502103",
+  "overrides_active": [
+    {
+      "detail": "stressed prob 1.00 > threshold; Moderate -> High",
+      "override": "regime_stressed",
+      "tickers": [
+        "ABX.TO",
+        "AQN.TO",
+        "ATD.TO",
+        "BAM.TO",
+        "BCE.TO",
+        "BMO.TO",
+        "BN.TO",
+        "BNS.TO",
+        "CAE.TO",
+        "CCL-B.TO",
+        "CIGI.TO",
+        "CM.TO",
+        "CNQ.TO",
+        "CNR.TO",
+        "CP.TO",
+        "CSU.TO",
+        "CTC-A.TO",
+        "CVE.TO",
+        "DOL.TO",
+        "DSG.TO",
+        "EMA.TO",
+        "ENB.TO",
+        "FFH.TO",
+        "FNV.TO",
+        "FSV.TO",
+        "FTS.TO",
+        "GIB-A.TO",
+        "GWO.TO",
+        "H.TO",
+        "IFC.TO",
+        "IMO.TO",
+        "L.TO",
+        "MFC.TO",
+        "MG.TO",
+        "MRU.TO",
+        "NA.TO",
+        "NTR.TO",
+        "OTEX.TO",
+        "POW.TO",
+        "PPL.TO",
+        "QSR.TO",
+        "RCI-B.TO",
+        "SAP.TO",
+        "SLF.TO",
+        "STN.TO",
+        "SU.TO",
+        "TD.TO",
+        "TIH.TO",
+        "TOU.TO",
+        "TRP.TO",
+        "WCN.TO",
+        "WSP.TO",
+        "X.TO"
+      ]
+    },
+    {
+      "detail": "fails liquidity floor -> High",
+      "override": "liquidity_floor",
+      "tickers": [
+        "ARX.TO"
+      ]
+    },
+    {
+      "detail": "data gap in last 5 trading days -> High",
+      "override": "data_gap",
+      "tickers": [
+        "ARX.TO"
+      ]
+    }
+  ],
+  "position_warnings": [
+    "ledger is empty; positions.csv taken as-is"
+  ],
+  "projection_ic": 0.05,
+  "regime": {
+    "calm_prob": 0.0,
+    "label": "stressed",
+    "stressed_prob": 1.0
+  },
+  "run_id": "b4dca1a3-d3d2-5d73-999d-04fd15c00445",
+  "selector_log": [],
+  "starter_phase": {
+    "active": true,
+    "invested_cad": 1700.0,
+    "threshold_cad": 15000
+  },
+  "status": "published",
+  "watchlist": [
+    {
+      "account": null,
+      "addon": null,
+      "checks": [
+        {
+          "detail": "after trade $1,500 (47%) vs limit $3,000 (20% or $3,000, whichever is larger)",
+          "name": "max_position",
+          "result": "pass"
+        },
+        {
+          "detail": "composite risk High",
+          "name": "risk_label",
+          "result": "fail"
+        },
+        {
+          "detail": "median daily traded value $198,847,286 vs floor $1,000,000",
+          "name": "liquidity",
+          "result": "pass"
+        },
+        {
+          "detail": "price $45.24 vs $2.00",
+          "name": "min_price",
+          "result": "pass"
+        },
+        {
+          "detail": "1478 trading days of price data (need 504)",
+          "name": "listing_history",
+          "result": "pass"
+        },
+        {
+          "detail": "last break 595 days ago",
+          "name": "structural_break",
+          "result": "pass"
+        },
+        {
+          "detail": "no earnings date known",
+          "name": "pre_earnings",
+          "result": "pass"
+        },
+        {
+          "detail": "event feature in shadow mode (not admitted yet, §8.5)",
+          "name": "negative_event",
+          "result": "n/a"
+        },
+        {
+          "detail": "dividend cut in last 12 months",
+          "name": "dividend_cut",
+          "result": "warn"
+        },
+        {
+          "detail": "no gap in 20 days",
+          "name": "data_gap",
+          "result": "pass"
+        },
+        {
+          "detail": "starter phase: sector caps off (D-7)",
+          "name": "sector_cap",
+          "result": "n/a"
+        },
+        {
+          "detail": "no recent NONREG loss sale",
+          "name": "superficial_loss",
+          "result": "pass"
+        }
+      ],
+      "class": "WATCH",
+      "conformal_interval_80": [
+        -0.073659,
+        0.084078
+      ],
+      "demoted_reason": null,
+      "est_cost_cad": 0.0,
+      "est_price_cad": 45.240002,
+      "held": false,
+      "m1_pct": 0.8971,
+      "m2_pct": 0.7206,
+      "priority": 0.0,
+      "projected_return_3m": 0.0139,
+      "projected_value_cad": null,
+      "rank": 1,
+      "rationale": "Watch: dividend cut in the last 12 months. Score top 12%, risk High. Failed checks: risk_label.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "Moderate",
+        "R4": "High",
+        "R5": "Moderate",
+        "R6": "Low",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.8824,
+      "sector": "Materials",
+      "shap_top_features": [
+        {
+          "feature": "vol_20d",
+          "raw": 0.569991,
+          "value": 0.041458
+        },
+        {
+          "feature": "beta_126d",
+          "raw": 2.530404,
+          "value": 0.029063
+        },
+        {
+          "feature": "vol_60d",
+          "raw": 0.437781,
+          "value": 0.02382
+        }
+      ],
+      "shares": 0,
+      "ticker": "ABX.TO",
+      "warnings": [
+        "dividend_cut"
+      ]
+    },
+    {
+      "account": null,
+      "addon": null,
+      "checks": [
+        {
+          "detail": "after trade $1,500 (47%) vs limit $3,000 (20% or $3,000, whichever is larger)",
+          "name": "max_position",
+          "result": "pass"
+        },
+        {
+          "detail": "composite risk High",
+          "name": "risk_label",
+          "result": "fail"
+        },
+        {
+          "detail": "median daily traded value $97,099,083 vs floor $1,000,000",
+          "name": "liquidity",
+          "result": "pass"
+        },
+        {
+          "detail": "price $15.86 vs $2.00",
+          "name": "min_price",
+          "result": "pass"
+        },
+        {
+          "detail": "1478 trading days of price data (need 504)",
+          "name": "listing_history",
+          "result": "pass"
+        },
+        {
+          "detail": "last break 49 days ago",
+          "name": "structural_break",
+          "result": "fail"
+        },
+        {
+          "detail": "no earnings date known",
+          "name": "pre_earnings",
+          "result": "pass"
+        },
+        {
+          "detail": "event feature in shadow mode (not admitted yet, §8.5)",
+          "name": "negative_event",
+          "result": "n/a"
+        },
+        {
+          "detail": "dividend cut in last 12 months",
+          "name": "dividend_cut",
+          "result": "warn"
+        },
+        {
+          "detail": "no gap in 20 days",
+          "name": "data_gap",
+          "result": "pass"
+        },
+        {
+          "detail": "starter phase: sector caps off (D-7)",
+          "name": "sector_cap",
+          "result": "n/a"
+        },
+        {
+          "detail": "no recent NONREG loss sale",
+          "name": "superficial_loss",
+          "result": "pass"
+        }
+      ],
+      "class": "WATCH",
+      "conformal_interval_80": [
+        -0.080822,
+        0.091976
+      ],
+      "demoted_reason": null,
+      "est_cost_cad": 0.0,
+      "est_price_cad": 15.86,
+      "held": false,
+      "m1_pct": 0.0294,
+      "m2_pct": 0.4118,
+      "priority": 0.0,
+      "projected_return_3m": -0.0244,
+      "projected_value_cad": null,
+      "rank": 2,
+      "rationale": "Watch: dividend cut in the last 12 months. Score bottom 12%, risk High. Failed checks: risk_label, structural_break.",
+      "risk_breakdown": {
+        "R1": "High",
+        "R2": "Moderate",
+        "R3": "High",
+        "R4": "High",
+        "R5": "High",
+        "R6": "Moderate",
+        "R7": "Low"
+      },
+      "risk_label": "High",
+      "score_pct": 0.1176,
+      "sector": "Communication Services",
+      "shap_top_features": [
+        {
+          "feature": "rsi_14",
+          "raw": 76.860051,
+          "value": -0.045677
+        },
+        {
+          "feature": "mom_60d",
+          "raw": 0.198173,
+          "value": -0.030404
+        },
+        {
+          "feature": "mom_20d",
+          "raw": 0.285251,
+          "value": 0.023047
+        }
+      ],
+      "shares": 0,
+      "ticker": "T.TO",
+      "warnings": [
+        "dividend_cut"
+      ]
+    }
+  ]
+}
