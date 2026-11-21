@@ -70,20 +70,15 @@
     "X.TO": "2026-11-20"
   },
   "last_stats": {
-    "at_utc": "2026-11-20T19:36:50Z",
+    "at_utc": "2026-11-21T16:59:51Z",
     "by_source": {
-      "google_news": {
-        "items": 3280,
-        "match_rate": 1.0,
-        "matched": 3280
-      },
       "newsfile": {
         "items": 25,
-        "match_rate": 0.04,
-        "matched": 1
+        "match_rate": 0.12,
+        "matched": 3
       }
     },
-    "collected": 3305,
-    "new": 3244
+    "collected": 25,
+    "new": 25
   }
 }

@@ -1,0 +1,51 @@
+{
+  "actions_scored": 0,
+  "as_of_utc": "2026-11-21T17:00:38Z",
+  "benchmarks_since_start": {},
+  "decision_date": "2026-11-21",
+  "git_sha": "b6a1f3122dd7c6bcd5f524ff833ba9b9c14c8830",
+  "hit_rate_as_if": null,
+  "live_replay": null,
+  "low_confidence": false,
+  "model_card_hash": "58624b6f4325640748b47a5aee846eb8133ec1b6c0d64437f58cf82167502103",
+  "naive_baseline": null,
+  "news": {
+    "at_utc": "2026-11-21T16:59:51Z",
+    "by_source": {
+      "newsfile": {
+        "items": 25,
+        "match_rate": 0.12,
+        "matched": 3
+      }
+    },
+    "collected": 25,
+    "new": 25
+  },
+  "news_gate": {
+    "admitted": false,
+    "evaluated_weeks": 0,
+    "group": "tier3_news_events",
+    "mean_ic_improvement_5d": null,
+    "required_weeks": 26,
+    "shadow_weeks": 0,
+    "status": "shadow",
+    "weight": 0.2
+  },
+  "notes": [
+    "Short-window IC is a diagnostic only.",
+    "Baseline comparison: see live_replay and the backtest report."
+  ],
+  "rank_ic_live": {
+    "ic_5d_12m": null,
+    "ic_5d_1w": null,
+    "ic_5d_3m": null,
+    "ic_5d_6m": null,
+    "ic_63d_12m": null,
+    "ic_63d_1w": null,
+    "ic_63d_3m": null,
+    "ic_63d_6m": null
+  },
+  "run_id": "b4dca1a3-d3d2-5d73-999d-04fd15c00445",
+  "validation_ic_blend": -0.000852,
+  "weekly_ic": []
+}
