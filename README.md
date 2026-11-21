@@ -39,12 +39,14 @@ Tickers use Yahoo format: `RY.TO`, `CTC-A.TO`, `RCI-B.TO`.
 
 | Workflow | When | What |
 |---|---|---|
-| `weekly.yml` | Saturday 10:00 ET, Sunday retry | Refits models, publishes `artifacts/weekly/<date>/` (callouts, model card, performance, scores), rebuilds the dashboard. Catches up missed weeks as `missed` (never back-filled with actions). |
-| `daily.yml` | Mon to Fri 22:30 ET | Monitoring only: risk-label changes, structural breaks, data gaps, low-risk opportunity flags. Turn off with `schedule.daily.enabled: false` in `config/settings.yaml`. |
+| `weekly.yml` | Saturday about 8:15 ET, Sunday retry | Refits models, publishes `artifacts/weekly/<date>/` (callouts, model card, performance, scores), rebuilds the dashboard. Catches up missed weeks as `missed` (never back-filled with actions). |
+| `daily.yml` | Mon to Fri about 21:45 ET | Monitoring only: risk-label changes, structural breaks, data gaps, low-risk opportunity flags. Turn off with `schedule.daily.enabled: false` in `config/settings.yaml`. |
 | `news.yml` | Daily | Collects press releases and headlines into `artifacts/news/` and scores new headlines with FinBERT on CPU. Not used in callouts until the news features pass 26 weeks of shadow mode. |
 | `backtest.yml` | 1st of each month, or on demand | Replays history with the production code path, runs the naive baseline, DSR, PBO and the feature-group ablation, and writes `artifacts/backtest/latest/`. About 20 to 40 minutes. |
 | `confirm.yml` | When you open a `Confirm trades` issue | Records the trades in the ledger and positions, replies with the new balances, closes the issue. |
 | `ci.yml` | Every push and PR | Full test suite. |
+
+GitHub can start scheduled jobs late (hours, at busy times), so the times above are the earliest start. If the dashboard has nothing by midday Saturday, run **weekly** by hand (Actions, weekly, Run workflow); the scheduled run then does nothing. Jobs save their results with `pipeline/gitsync.py`, which retries and merges `state/run_state.json` if two jobs finish close together.
 
 Failures, a missing weekly run, contribution-room warnings and IC divergence open a GitHub Issue.
 

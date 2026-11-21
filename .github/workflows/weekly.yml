@@ -1,10 +1,11 @@
 name: weekly
-# Saturday ~10:00 ET with a Sunday retry (no-op if Saturday published). Cron is UTC; the job
+# Saturday ~8:17 ET (13:17 UTC) with a Sunday retry (no-op if Saturday published). Odd minute on purpose:
+# GitHub delays top-of-hour schedules, sometimes by hours. Cron is UTC; the job
 # works out the Toronto decision date itself, so DST and late starts don't matter (§5.2).
 on:
   schedule:
-    - cron: "0 15 * * 6"
-    - cron: "0 15 * * 0"
+    - cron: "17 13 * * 6"
+    - cron: "17 13 * * 0"
   workflow_dispatch:
     inputs:
       force_reissue:
@@ -52,11 +53,7 @@ jobs:
         run: |
           git config user.name "callout-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add artifacts state
-          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
-          git commit -m "weekly callouts $(date -u +%F) [run ${{ github.run_id }}]"
-          git pull --rebase
-          git push
+          python -m pipeline.gitsync "weekly callouts $(date -u +%F) [run ${{ github.run_id }}]" artifacts state
       - name: Build dashboard
         if: always()
         run: python site/build.py --out _site
