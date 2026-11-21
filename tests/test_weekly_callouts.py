@@ -77,3 +77,18 @@ def test_dashboard_builds(root):
                    "This week's trade suggestions", "Confirm trades I made", "Account budget", "Risk posture", "Performance", "History", "Run health",
                    "SAMPLE DATA"):
         assert needle in html, needle
+
+
+def test_high_risk_ideas_are_separate_with_targets(root):
+    doc = run(root)
+    hr = doc["high_risk_ideas"]
+    assert len(hr) <= 10
+    main = {c["ticker"] for c in doc["callouts"] if c["class"] in ACTION}
+    assert not main & {x["ticker"] for x in hr}
+    exp = [x["expected_return_1w"] for x in hr]
+    assert exp == sorted(exp, reverse=True) and all(v > 0 for v in exp)
+    for x in hr:
+        lo, hi = x["range_80_1w"]
+        assert lo < x["target_price_1w"] < hi and x["target_price_1w"] > x["price_cad"]
+        assert x["score_pct"] >= 0.5 and x["outside_criteria"] and x["rationale"]
+        assert x["rank"] == hr.index(x) + 1

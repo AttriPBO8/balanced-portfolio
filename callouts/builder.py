@@ -241,8 +241,62 @@ class Builder:
                 "starter_active": self.starter_active, "invested_cad": self.invested, "log": self.log,
                 "cash_after": self.cash, "allowance_left": self.allow,
                 "holdings_review": review, "watchlist": watch,
+                "high_risk_ideas": self.high_risk_ideas(taken | {x["ticker"] for x in final_actions}, eligible),
                 "projection_ic": float(self.c["callouts"].get("projection_ic", 0.05))}
         return final, meta
+
+    # data-quality checks still apply to the high-risk list; the others are what it may skip
+    DATA_CHECKS = ("liquidity", "min_price", "listing_history", "data_gap", "superficial_loss")
+
+    def high_risk_ideas(self, exclude: set, eligible: list[str]) -> list[dict]:
+        """Separate list: the most promising buys for next week that the main list leaves out,
+        ranked by the expected one-week return, with a target price and an 80% range. They may
+        carry a High risk label, a recent break, earnings next week or a size/sector breach;
+        they never bypass the data-quality checks. Not actions: no shares, no account."""
+        hr = self.c.get("high_risk", {})
+        if not hr.get("enabled", True) or self.i.conformal is None or "center" not in self.i.conformal:
+            return []
+        min_score = float(hr.get("min_score_pct", 0.5))
+        out = []
+        for t in eligible:
+            if t in exclude or t not in self.i.conformal.index:
+                continue
+            ci = self.i.conformal.loc[t]
+            mid, lo, hi = _f(ci.get("center")), _f(ci.get("lo")), _f(ci.get("hi"))
+            s = float(self.i.scores.at[t, "blend_pct"])
+            price = _f(self.price.get(t))
+            if None in (mid, lo, hi, price) or mid <= 0 or s < min_score:
+                continue
+            chk = self.checks_for(t, self.sizing["new_position_cad"])
+            fails = blocked(chk)
+            if any(f in self.DATA_CHECKS for f in fails):
+                continue
+            why = [next(c["detail"] for c in chk if c["name"] == f) for f in fails]
+            why = [f"{f.replace('_', ' ')}: {d}" for f, d in zip(fails, why)]
+            why += [f"{c['name'].replace('_', ' ')}: {c['detail']}" for c in chk if c["result"] == "warn"]
+            if not why and t in self.value_by_ticker.index:
+                why = ["you already hold it and the add-on test did not call for more this week"]
+            if not why:
+                why = ["score below the main list's buy line" if s < self.c["callouts"]["buy_new_quantile"]
+                       else "did not fit this week's trade limit, cash or the top 10"]
+            out.append({
+                "ticker": t, "held": t in self.value_by_ticker.index, "sector": self.i.sectors.get(t),
+                "price_cad": round(price, 2), "target_price_1w": round(price * (1 + mid), 2),
+                "range_80_1w": [round(price * (1 + lo), 2), round(price * (1 + hi), 2)],
+                "expected_return_1w": round(mid, 4), "score_pct": round(s, 4),
+                "projected_return_3m": round(self.projected_return(t), 4),
+                "risk_label": self.i.composite[t], "risk_breakdown": self.i.dims.loc[t].to_dict(),
+                "outside_criteria": why, "shap_top_features": self.i.shap_top.get(t, []),
+            })
+        out.sort(key=lambda x: (-x["expected_return_1w"], -x["score_pct"], x["ticker"]))
+        out = out[:int(hr.get("count", 10))]
+        for rank, x in enumerate(out, 1):
+            x["rank"] = rank
+            x["rationale"] = (f"Expected {x['expected_return_1w']:+.1%} next week: target ${x['target_price_1w']:,.2f} "
+                              f"from ${x['price_cad']:,.2f} (80% range ${x['range_80_1w'][0]:,.2f} to ${x['range_80_1w'][1]:,.2f}). "
+                              f"Score {x['score_pct']:.0%}, risk {x['risk_label']}. Outside the main list because: "
+                              + "; ".join(x["outside_criteria"]) + ".")
+        return out
 
     def _set_value(self, co: dict) -> None:
         t, cls = co["ticker"], co["class"]
