@@ -70,7 +70,7 @@
     "X.TO": "2026-11-26"
   },
   "last_stats": {
-    "at_utc": "2026-11-27T02:46:10Z",
+    "at_utc": "2026-11-27T03:36:26Z",
     "by_source": {
       "newsfile": {
         "items": 25,
@@ -79,6 +79,6 @@
       }
     },
     "collected": 25,
-    "new": 0
+    "new": 5
   }
 }
