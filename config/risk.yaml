@@ -11,6 +11,10 @@ R3_forecast_uncertainty:  # conformal 80% half-width (return units, conformal_ho
 R4_regime:
   calm_prob_low: 0.70
   stressed_prob_high: 0.60
+  # caution (owner decision 2026-11-27): stress is shown on every stock and limits new buys to
+  # Low-risk names, but it no longer turns stocks High risk or triggers trims on its own.
+  # block: the original rule (R4 counts in the composite and Moderate -> High in stress).
+  stress_mode: caution
 R5_structural_break:
   recent_months: 6
   window_months: 24

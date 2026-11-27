@@ -319,7 +319,8 @@ class Builder:
         co["rank"] = rank
         co.setdefault("projected_return_3m", round(self.projected_return(co["ticker"]), 4))
         co.setdefault("projected_value_cad", None)
-        co["warnings"] = sorted(set(co["warnings"]) | set(warnings_of(co["checks"])))
+        extra = {"market_stressed"} if self.i.regime.get("label") == "stressed" else set()
+        co["warnings"] = sorted(set(co["warnings"]) | set(warnings_of(co["checks"])) | extra)
         co["rationale"] = self._rationale(co)
         for k in [k for k in co if k.startswith("_")]:
             co.pop(k)

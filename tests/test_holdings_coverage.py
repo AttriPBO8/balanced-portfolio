@@ -64,3 +64,26 @@ def test_as_of_today_dates_the_run_today(root):
     # the Saturday run still publishes its own set afterwards
     res2 = run_weekly(root, now=dt.datetime(2026, 11, 28, 14, tzinfo=dt.timezone.utc))
     assert res2["status"] == "published" and res2["decision_date"] == "2026-11-28"
+
+
+def test_worst_drop_and_house_money():
+    from pipeline.run_weekly import house_money, worst_drop
+    idx = pd.bdate_range("2022-01-03", periods=300)
+    p = pd.Series(100.0, index=idx)
+    p.iloc[50:80] = np.linspace(100, 70, 30)      # 30% fall inside 6 months
+    p.iloc[80:] = 120.0
+    drop, pk, tr = worst_drop(p)
+    assert abs(drop - 0.30) < 1e-9 and pk <= tr
+
+    class P:  # minimal panel
+        adj_close = pd.DataFrame({"AAA": p, "BBB": p * 0 + 50.0})
+    rows = [{"ticker": "AAA", "account": "TFSA", "value_cad": 1200.0, "acb_cad": 1000.0},
+            {"ticker": "BBB", "account": "RRSP", "value_cad": 400.0, "acb_cad": 500.0}]
+    hm = house_money(rows, P, idx[-1].date(), dt.date(2021, 1, 1))
+    by = {r["ticker"]: r for r in hm["rows"]}
+    assert by["AAA"]["house_money_cad"] == 200 - 1200 * 0.30          # measured on current value
+    assert by["BBB"]["house_money_cad"] == -100                        # losers count; no drop -> nothing at risk
+    assert hm["total_cad"] == round(-160 - 100, 2)
+    assert by["AAA"]["high_risk_fund_cad"] == 200 - 1000 * 0.30        # High Risk Fund: fall on amount invested
+    assert by["BBB"]["high_risk_fund_cad"] == -100
+    assert hm["high_risk_fund_total_cad"] == round(-100 - 100, 2)
