@@ -22,7 +22,7 @@ import pandas as pd
 from backtest.validation import purged_walk_forward
 from callouts.builder import ACTION_CLASSES
 from callouts.rules import contribution_room
-from common.config import enabled_accounts, load_config, universe, with_holdings
+from common.config import enabled_accounts, load_config, universe, with_holdings, with_us_screen
 from common.dates import (decision_date_for, decision_dates_between, iso_utc, last_close_on_or_before, toronto_today,
                           utc_now)
 from common.io import (StagedWrite, frame_hash, git_sha, new_run_id, read_json, sha256_file, sha256_obj)
@@ -243,6 +243,9 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
     with_snap = missed[: int(sched["max_catchup_weeks"])]
 
     portfolio = load_portfolio(root)   # future-date checks use the real clock
+    us_screened = with_us_screen(cfg, root)
+    if us_screened:
+        log.info("US screen: %d names join this week's scoring (RRSP-only buys)", len(us_screened))
     held_extra = with_holdings(cfg, portfolio.held_tickers())
     if held_extra:
         log.info("holdings outside the buy lists, reviewed this week: %s", ", ".join(held_extra))
@@ -329,6 +332,7 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
             "run_kind": "on_demand_today" if as_of_today else ("dated" if decision_date else "scheduled"),
             "close_used": close_D.isoformat(),
             "fx": panel.fx, "held_outside_lists": held_extra, "uncovered_holdings": uncovered,
+            "us_screened": us_screened,
         }
         callouts_doc["portfolio"] = portfolio_rows(portfolio, wk["panel"], close_D, cfg["sectors"])
         callouts_doc["house_money"] = house_money(callouts_doc["portfolio"], wk["panel"], close_D, start)

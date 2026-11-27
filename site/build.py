@@ -24,6 +24,7 @@ from common.config import load_config  # noqa: E402
 from common.dates import utc_now  # noqa: E402
 from pipeline import state as st  # noqa: E402
 from callouts import explain as ex  # noqa: E402
+from common.tickers import is_us_listed  # noqa: E402
 
 NOTICES = [
     "Recommendations only. Not investment advice. The owner places all orders.",
@@ -337,6 +338,7 @@ def sugg_card(c: dict, items: Items) -> str:
             f"<span>Rating {s:.0%}</span>"
             + (f"<span>Value {'+' if pv >= 0 else '−'}${abs(pv):,.0f}</span>" if pv is not None else "")
             + (f"<span>{e(c.get('sector'))}</span>" if c.get("sector") else "")
+            + ("<span>US · RRSP only</span>" if is_us_listed(c["ticker"]) else "")
             + f"</div><div class='meter' title='rating percentile'><span style='width:{s * 100:.0f}%'></span></div>"
             "<div class='more'>Why? Tap for the explanation →</div></button>")
 
@@ -596,6 +598,8 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
         if fx.get("usdcad"):
             info.append(f"US holdings ({e(', '.join(fx.get('converted', [])))}) converted at USD/CAD {fx['usdcad']:.4f} "
                         f"({e(fx.get('date'))})")
+        if cal.get("us_screened"):
+            info.append(f"{len(cal['us_screened'])} US stocks from the monthly screen were scored too (buys go to the RRSP only)")
         if cal.get("held_outside_lists"):
             info.append("reviewed but never suggested as new buys (not on the stock list): "
                         + e(", ".join(cal["held_outside_lists"])))

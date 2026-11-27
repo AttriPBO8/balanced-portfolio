@@ -27,6 +27,12 @@ Summary tiles (portfolio value, gain vs cost, House money, this week's trades, m
 
 **Market stress is a caution** (`stress_mode: caution` in `config/risk.yaml`, the default since 2026-11-27): the regime still shows on every stock and limits new buys to Low-risk names, but it no longer turns stocks High risk or triggers sells on its own. `stress_mode: block` restores the original rule.
 
+## US stocks (two-step screener)
+
+Step 1, monthly (`pipeline/us_screen.py`, run by the weekly job; `python -m pipeline.us_screen --force` to run now): about 900 US candidates (S&P 500 + S&P MidCap 400 from the public Wikipedia constituent tables, saved in `data/universe/us_candidates.csv`) get one bulk price download and simple filters, all in CAD: price at least $10, median daily traded value at least $30M over 60 days, 2 years of history, 60-day volatility at most 60%. The rest are ranked on 6-month momentum (40%), 3-month momentum (20%), low volatility (20%) and liquidity (20%), with at most 20 per sector, and the top 100 are kept in `data/universe/us_screened.csv`. Each screen is logged in `artifacts/us_screen/<date>.json`.
+
+Step 2, weekly: the 100 names are scored, risk-labelled and checked by the same model as the TSX stocks and can appear as buys. **US buys go to the RRSP only** (US dividends paid into a TFSA lose 15% to withholding tax), and while US buys are on, Canadian buys try the TFSA first so RRSP cash is left for them. Settings are under `us_screen` in `config/settings.yaml`; `buy_enabled: false` keeps US names on the dashboard without buy suggestions. The backtest stays TSX-only, because today's screened list would bias a replay of past years.
+
 ## High-risk ideas
 
 A separate weekly list (`settings.high_risk`, up to 10) of the stocks the models expect to rise most next week that the main list leaves out. They may have a High risk label, a recent structural break, earnings next week or a size/sector breach; data-quality checks (liquidity, price, history, data gaps) still apply. Each has a **target price for one week** (price x (1 + the calibrated 5-day expected return from M6)) and the 80% conformal range, and says why it is outside the main list. Not actions: no shares, no account, not counted in the caps. In `callouts.json` as `high_risk_ideas`.

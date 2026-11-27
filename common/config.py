@@ -74,7 +74,8 @@ def universe(cfg: dict) -> list[str]:
     by with_holdings) anything the owner holds that is on neither list, so no holding goes unreviewed."""
     u = cfg["universe"]
     out: list[str] = []
-    for t in list(u.get("tsx_core") or []) + list(u.get("us_track") or []) + list(u.get("held_extra") or []):
+    for t in (list(u.get("tsx_core") or []) + list(u.get("us_track") or []) + list(u.get("us_screened") or [])
+              + list(u.get("held_extra") or [])):
         if t not in out:
             out.append(t)
     return out
@@ -83,12 +84,48 @@ def universe(cfg: dict) -> list[str]:
 def candidate_list(cfg: dict) -> list[str]:
     """The owner's buy lists only (TSX-Core + US track), without the held-only additions."""
     u = cfg["universe"]
-    return list(dict.fromkeys(list(u.get("tsx_core") or []) + list(u.get("us_track") or [])))
+    return list(dict.fromkeys(list(u.get("tsx_core") or []) + list(u.get("us_track") or [])
+                              + list(u.get("us_screened") or [])))
 
 
 def buy_list(cfg: dict) -> list[str]:
-    """Tickers that may be suggested as new buys: TSX-Core only (us_track is research only, §13.7)."""
-    return list(cfg["universe"].get("tsx_core") or [])
+    """Tickers that may be suggested as new buys: TSX-Core, plus the screened US names when
+    us_screen.buy_enabled (us_track stays research only, §13.7)."""
+    u = cfg["universe"]
+    out = list(u.get("tsx_core") or [])
+    if (cfg["settings"].get("us_screen") or {}).get("buy_enabled"):
+        out += [t for t in u.get("us_screened") or [] if t not in out]
+    return out
+
+
+def with_us_screen(cfg: dict, root) -> list[str]:
+    """Add the step-1 US screen (data/universe/us_screened.csv) to this run's universe and sectors."""
+    from pathlib import Path
+    import csv
+    sc = cfg["settings"].get("us_screen") or {}
+    p = Path(root) / "data/universe/us_screened.csv"
+    if not sc.get("enabled") or not p.exists():
+        cfg["universe"]["us_screened"] = []
+        return []
+    with p.open() as fh:
+        rows = list(csv.DictReader(fh))
+    cfg["universe"]["us_screened"] = [r["ticker"] for r in rows]
+    for r in rows:
+        cfg["sectors"].setdefault(r["ticker"], r.get("sector") or "Unclassified")
+    return cfg["universe"]["us_screened"]
+
+
+def buy_accounts_for(cfg: dict, ticker: str) -> list[str] | None:
+    """Accounts allowed for a new buy of this ticker, or None for the normal order."""
+    from common.tickers import is_us_listed
+    sc = cfg["settings"].get("us_screen") or {}
+    if is_us_listed(ticker):
+        return list(sc.get("accounts") or ["RRSP"])
+    if sc.get("enabled") and sc.get("buy_enabled") and sc.get("save_rrsp_for_us", True):
+        # Canadian buys try the TFSA first so RRSP cash is left for US buys, which can only go there
+        order = [a for a in cfg["settings"]["transaction_caps"]["new_buy_account_order"] if a != "RRSP"]
+        return order + ["RRSP"]
+    return None
 
 
 def with_holdings(cfg: dict, held: set[str] | list[str]) -> list[str]:

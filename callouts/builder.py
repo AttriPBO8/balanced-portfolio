@@ -11,7 +11,7 @@ from scipy.stats import norm
 from callouts import addon as addon_mod
 from callouts.checks import blocked, position_limit, run_checks, warnings_of
 from callouts.rules import bought_recently
-from common.config import buy_list
+from common.config import buy_accounts_for, buy_list
 from common.owner_inputs import Portfolio
 from models.covariance import risk_contrib_change
 
@@ -362,6 +362,9 @@ class Builder:
         minimum = self.sizing["min_trade_cad"]
         if cls == "ACTION_BUY_NEW":
             order = [a for a in self.c["transaction_caps"]["new_buy_account_order"] if a in i.accounts]
+            only = buy_accounts_for(i.cfg, t)
+            if only is not None:   # US listings: RRSP only; Canadian buys: TFSA before RRSP while US buys are on
+                order = [a for a in only if a in order]
             with_allow = [a for a in order if self.allow.get(a, 0) > 0]
             if not with_allow:
                 return self._demote(co, "OPPORTUNITY", "cap_reached")

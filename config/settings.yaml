@@ -38,6 +38,27 @@ high_risk:                   # separate list of promising buys the main list lea
   count: 10
   min_score_pct: 0.5         # blended score at least this (top half)
 
+us_screen:                   # two-step US screener (owner request 2026-11-27)
+  enabled: true
+  buy_enabled: true          # screened US names can be suggested as new buys
+  accounts: [RRSP]           # US buys go to the RRSP only (15% withholding on US dividends in a TFSA)
+  save_rrsp_for_us: true     # Canadian new buys try the TFSA first, leaving RRSP cash for US buys
+  refresh_days: 28           # re-screen monthly so the list doesn't churn weekly
+  candidates_refresh_days: 28
+  candidate_sources:         # public constituent tables (free); ~900 names together
+    sp500: https://en.wikipedia.org/wiki/List_of_S%26P_500_companies
+    sp400: https://en.wikipedia.org/wiki/List_of_S%26P_400_companies
+  min_candidates: 300        # refresh rejected below this (layout change, partial download)
+  lookback_calendar_days: 760
+  # step 1 filters, in CAD after USD/CAD conversion
+  min_price_cad: 10
+  min_median_traded_value_cad: 30000000
+  min_history_days: 504
+  max_vol_60d: 0.60
+  weights: {mom_126d: 0.4, mom_60d: 0.2, low_vol: 0.2, liquidity: 0.2}
+  max_per_sector: 20
+  keep: 100
+
 opportunity:
   score_quantile: 0.30       # top 30%
   pullback_from_high_min: 0.10

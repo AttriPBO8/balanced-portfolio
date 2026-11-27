@@ -255,6 +255,9 @@ def main(argv: list[str] | None = None) -> int:
     m = TITLE_DATE.search(a.title or "")
     u = cfg["universe"]
     known = set(u.get("tsx_core") or []) | set(u.get("us_track") or []) | set(load_positions(root)["ticker"])
+    scr = root / "data/universe/us_screened.csv"
+    if scr.exists():
+        known |= set(pd.read_csv(scr, dtype=str)["ticker"])
     trades, errors = parse(Path(a.body_file).read_text(), today, float(cfg["settings"]["fees"]["per_trade_cad"]),
                            m.group(1) if m else None, known)
     res = {"ok": False, "errors": errors, "recorded": [], "skipped": []} if errors else apply(root, trades, a.issue)
