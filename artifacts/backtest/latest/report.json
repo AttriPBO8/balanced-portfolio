@@ -9,8 +9,8 @@
           "rev_5d"
         ],
         "group": "momentum",
-        "ic_drop": -0.009488,
-        "ic_without": 0.010761
+        "ic_drop": -0.014061,
+        "ic_without": 0.01036
       },
       {
         "features": [
@@ -19,8 +19,8 @@
           "beta_126d"
         ],
         "group": "volatility_beta",
-        "ic_drop": 0.01752,
-        "ic_without": -0.016246
+        "ic_drop": 0.011431,
+        "ic_without": -0.015132
       },
       {
         "features": [
@@ -29,8 +29,8 @@
           "rsi_14"
         ],
         "group": "technical",
-        "ic_drop": 0.006567,
-        "ic_without": -0.005294
+        "ic_drop": 0.000555,
+        "ic_without": -0.004257
       },
       {
         "features": [
@@ -40,16 +40,16 @@
         ],
         "group": "earnings_t3",
         "ic_drop": 0.0,
-        "ic_without": 0.001273
+        "ic_without": -0.003701
       }
     ],
-    "ic_all": 0.001273
+    "ic_all": -0.003701
   },
-  "actions_frozen": 414,
+  "actions_frozen": 399,
   "baseline_trades": 25,
   "benchmark": "XIC.TO",
   "caveat": "Backtest: survivorship-biased universe (today's TSX-Core list plus a manual delisting log), Yahoo's current consensus for earnings surprise, no point-in-time fundamentals. Treat as optimistic.",
-  "config_hash": "71bcfc0f9768c60bd345aeb526493524efd0d32d491b6d1361c4fd638ede8820",
+  "config_hash": "9061aa9abacdbefdfcbbcb2d07c2bf58024c04c71dbe4974ca6e6d3fe0ebed0f",
   "costs": {
     "half_spread_bps": 10,
     "per_trade_cad": 9.95
@@ -57,17 +57,17 @@
   "data_mode": "live",
   "delisting_events": [],
   "dsr": {
-    "T": 253,
-    "dsr": 0.726886,
-    "kurtosis": 5.350496,
+    "T": 254,
+    "dsr": 0.750086,
+    "kurtosis": 4.927596,
     "n_trials": 18,
-    "skew": -0.525455,
-    "sr0_periodic": 0.033433,
-    "sr_periodic": 0.072266
+    "skew": -0.468241,
+    "sr0_periodic": 0.033753,
+    "sr_periodic": 0.077054
   },
-  "end": "2026-11-14",
-  "generated_utc": "2026-11-20T12:38:38Z",
-  "git_sha": "4de9a1032ff9a90e863c0600169bd090ccdab892",
+  "end": "2026-11-21",
+  "generated_utc": "2026-11-27T01:58:30Z",
+  "git_sha": "b8f9350f68c653f27131247ac03c65b6e65d3da2",
   "initial_cash": {
     "RRSP": 8000,
     "TFSA": 7000
@@ -77,49 +77,49 @@
     "TFSA": 0
   },
   "pbo": {
-    "median_logit": 2.890372,
+    "median_logit": 1.029619,
     "n_variants": 18,
-    "pbo": 0.170635,
+    "pbo": 0.230159,
     "splits": 252
   },
-  "runtime_seconds": 2147.6,
+  "runtime_seconds": 2125.8,
   "series": {
     "XIC.TO": {
-      "cagr": 0.118307,
+      "cagr": 0.098902,
       "max_drawdown": -0.166619,
-      "sharpe": 0.930917,
-      "total_return": 0.722935,
-      "vol": 0.129212,
-      "weeks": 253
+      "sharpe": 0.770654,
+      "total_return": 0.585148,
+      "vol": 0.134223,
+      "weeks": 254
     },
     "XIU.TO": {
-      "cagr": 0.112947,
+      "cagr": 0.094246,
       "max_drawdown": -0.164437,
-      "sharpe": 0.912996,
-      "total_return": 0.683122,
-      "vol": 0.126016,
-      "weeks": 253
+      "sharpe": 0.754532,
+      "total_return": 0.552607,
+      "vol": 0.130842,
+      "weeks": 254
     },
     "baseline": {
-      "cagr": 0.11132,
+      "cagr": 0.092364,
       "max_drawdown": -0.203725,
-      "sharpe": 0.772001,
-      "total_return": 0.671188,
-      "vol": 0.151689,
-      "weeks": 253
+      "sharpe": 0.645378,
+      "total_return": 0.539609,
+      "vol": 0.15576,
+      "weeks": 254
     },
     "callouts": {
-      "cagr": 0.05486,
-      "max_drawdown": -0.139451,
-      "sharpe": 0.521119,
-      "total_return": 0.296734,
-      "vol": 0.115311,
-      "weeks": 253
+      "cagr": 0.066398,
+      "max_drawdown": -0.127272,
+      "sharpe": 0.555648,
+      "total_return": 0.368912,
+      "vol": 0.131297,
+      "weeks": 254
     }
   },
   "skipped_weeks": [],
   "start": "2022-01-08",
-  "trades": 414,
+  "trades": 399,
   "validation": {
     "dsr": null,
     "embargo_days": 89,
@@ -141,25 +141,25 @@
     "folds": [
       {
         "holdout_regime": true,
-        "ic_blend": -0.039659,
-        "ic_m1": -0.00763,
-        "ic_m2": -0.066417,
-        "icir_blend": -0.164581,
-        "icir_m1": -0.033936,
-        "icir_m2": -0.277085,
+        "ic_blend": -0.043944,
+        "ic_m1": -0.0134,
+        "ic_m2": -0.069335,
+        "icir_blend": -0.177278,
+        "icir_m1": -0.057654,
+        "icir_m2": -0.289024,
         "scheme": "purged_holdout_both_sides",
         "test_dates": 53,
         "test_year": 2022,
-        "train_dates": 190
+        "train_dates": 191
       },
       {
         "holdout_regime": false,
-        "ic_blend": 0.05153,
-        "ic_m1": 0.05021,
-        "ic_m2": 0.036389,
-        "icir_blend": 0.290332,
-        "icir_m1": 0.386199,
-        "icir_m2": 0.140526,
+        "ic_blend": 0.044046,
+        "ic_m1": 0.041567,
+        "ic_m2": 0.03631,
+        "icir_blend": 0.249601,
+        "icir_m1": 0.334942,
+        "icir_m2": 0.14016,
         "scheme": "walk_forward",
         "test_dates": 52,
         "test_year": 2023,
@@ -167,12 +167,12 @@
       },
       {
         "holdout_regime": false,
-        "ic_blend": -0.01434,
-        "ic_m1": -0.012955,
-        "ic_m2": -0.008156,
-        "icir_blend": -0.079082,
-        "icir_m1": -0.081307,
-        "icir_m2": -0.037405,
+        "ic_blend": -0.016629,
+        "ic_m1": -0.016535,
+        "ic_m2": -0.00815,
+        "icir_blend": -0.089683,
+        "icir_m1": -0.101689,
+        "icir_m2": -0.037378,
         "scheme": "walk_forward",
         "test_dates": 52,
         "test_year": 2024,
@@ -180,12 +180,12 @@
       },
       {
         "holdout_regime": false,
-        "ic_blend": 0.023266,
-        "ic_m1": 0.046346,
-        "ic_m2": -0.002714,
-        "icir_blend": 0.147214,
-        "icir_m1": 0.372454,
-        "icir_m2": -0.013975,
+        "ic_blend": 0.023112,
+        "ic_m1": 0.045725,
+        "ic_m2": -0.002911,
+        "icir_blend": 0.14578,
+        "icir_m1": 0.365893,
+        "icir_m2": -0.014977,
         "scheme": "walk_forward",
         "test_dates": 52,
         "test_year": 2025,
@@ -193,27 +193,27 @@
       },
       {
         "holdout_regime": false,
-        "ic_blend": -0.022233,
-        "ic_m1": 0.008725,
-        "ic_m2": -0.078521,
-        "icir_blend": -0.092459,
-        "icir_m1": 0.048485,
-        "icir_m2": -0.27173,
+        "ic_blend": -0.035233,
+        "ic_m1": -0.002285,
+        "ic_m2": -0.086806,
+        "icir_blend": -0.1499,
+        "icir_m1": -0.013179,
+        "icir_m2": -0.300698,
         "scheme": "walk_forward",
-        "test_dates": 33,
+        "test_dates": 34,
         "test_year": 2026,
         "train_dates": 221
       }
     ],
     "label_horizon_days": 63,
     "mean_ic": {
-      "blend": 0.001273,
-      "m1": 0.017483,
-      "m2": -0.01977
+      "blend": -0.003701,
+      "m1": 0.011899,
+      "m2": -0.021865
     },
     "method": "purged_walk_forward_yearly",
     "pbo": null
   },
-  "verdict": "callouts vs naive baseline: behind by 37.4% over the backtest",
-  "weeks": 254
+  "verdict": "callouts vs naive baseline: behind by 17.1% over the backtest",
+  "weeks": 255
 }
