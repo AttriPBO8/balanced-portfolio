@@ -1,12 +1,12 @@
 {
   "actions_scored": 0,
-  "as_of_utc": "2026-11-27T02:00:28Z",
+  "as_of_utc": "2026-11-27T02:38:37Z",
   "benchmarks_since_start": {
     "XIC.TO": 0.03556,
     "XIU.TO": 0.033352
   },
   "decision_date": "2026-11-26",
-  "git_sha": "9bab5a5e323a7a22ccd6ba649052f400d87818d9",
+  "git_sha": "7474118e66d3484d0ea6548ba38ed45a266ef43b",
   "hit_rate_as_if": null,
   "live_replay": {
     "nav": [
@@ -64,10 +64,10 @@
     "weeks": 1
   },
   "low_confidence": false,
-  "model_card_hash": "d62548438577bd4774bd138947b01720a26c3ec7c7be91331eb073b371c61909",
+  "model_card_hash": "896357914dc0bb7b676069abbb303e54c23ebfb42545fc52654c2086605dabd2",
   "naive_baseline": null,
   "news": {
-    "at_utc": "2026-11-27T01:59:34Z",
+    "at_utc": "2026-11-27T02:37:42Z",
     "by_source": {
       "newsfile": {
         "items": 25,
@@ -76,7 +76,7 @@
       }
     },
     "collected": 25,
-    "new": 25
+    "new": 4
   },
   "news_gate": {
     "admitted": false,
@@ -102,8 +102,8 @@
     "ic_63d_3m": null,
     "ic_63d_6m": null
   },
-  "run_id": "a6c8efcc-e450-58ea-957b-86135f19e405",
-  "validation_ic_blend": -0.014909,
+  "run_id": "2e27b7c4-d92e-5ac3-891f-1aecd8c22835",
+  "validation_ic_blend": -0.016871,
   "weekly_ic": [
     {
       "decision_date": "2026-11-21"
