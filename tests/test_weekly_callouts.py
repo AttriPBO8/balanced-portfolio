@@ -92,3 +92,42 @@ def test_high_risk_ideas_are_separate_with_targets(root):
         assert lo < x["target_price_1w"] < hi and x["target_price_1w"] > x["price_cad"]
         assert x["score_pct"] >= 0.5 and x["outside_criteria"] and x["rationale"]
         assert x["rank"] == hr.index(x) + 1
+
+
+def test_dashboard_popups_and_portfolio_split(root):
+    import json as _json
+    import re
+    run(root)
+    spec = importlib.util.spec_from_file_location("site_build", REPO / "site/build.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    html = mod.build(root, root / "_site", now=dt.datetime(2026, 11, 14, 16, tzinfo=dt.timezone.utc)).read_text()
+    assert "Portfolio split" in html and "By sector" in html and "By stock" in html
+    data = _json.loads(re.search(r"<script type='application/json' id='popup-data'>(.*?)</script>", html, re.S).group(1))
+    ids = set(re.findall(r"data-item='(i\d+)'", html))
+    assert ids and ids <= set(data["items"])
+    for it in data["items"].values():
+        assert it["layman"] and it["financial"]
+    assert data["ph"]["dates"] and data["ph"]["series"]
+    assert "In plain words" in html and "Financial detail" in html
+
+
+def test_explanations_cover_every_class():
+    from callouts import explain as ex
+    base = {"ticker": "RY.TO", "risk_label": "High", "score_pct": 0.2, "m1_pct": 0.3, "m2_pct": 0.1,
+            "risk_breakdown": {f"R{i}": "Low" for i in range(1, 8)} | {"R5": "High", "R4": "High"},
+            "shap_top_features": [{"feature": "mom_60d", "value": -0.02, "raw": -0.1}], "checks": [],
+            "conformal_interval_80": [-0.03, 0.04], "est_price_cad": 100.0, "shares": 3, "account": "TFSA",
+            "projected_value_cad": -5.0, "projected_return_3m": -0.01, "warnings": ["market_stressed"]}
+    ctx = {"fee": 9.95, "stressed": True, "regime": {"label": "stressed", "stressed_prob": 0.9}, "n_scored": 76,
+           "held": {"RY.TO": {"quantity": 5}}}
+    for cls in ("ACTION_BUY_NEW", "ACTION_ADD", "ACTION_TRIM", "ACTION_EXIT", "OPPORTUNITY", "WATCH", "HOLD_OK"):
+        c = dict(base, **{"class": cls, "demoted_reason": "cap_reached"})
+        lay, fin = ex.layman(c, ctx), ex.financial(c, ctx)
+        assert "RY.TO" in lay and "structural" not in lay.lower() or "behaviour changed" in lay
+        assert "Blend score percentile" in fin and "Structural break" in fin
+    assert "stressed phase" in ex.layman(dict(base, **{"class": "ACTION_TRIM"}), ctx)
+    idea = dict(base, **{"class": "IDEA", "price_cad": 10.0, "target_price_1w": 10.3, "range_80_1w": [9.8, 10.7],
+                         "expected_return_1w": 0.03, "outside_criteria": ["risk label: High"]})
+    assert "$10.30" in ex.layman(idea, ctx) and "conformal" in ex.financial(idea, ctx)
+    assert "<script>" not in ex.layman(dict(base, ticker="<script>", **{"class": "WATCH"}), ctx)

@@ -62,9 +62,17 @@ def dimension_labels(t: pd.DataFrame, regime: dict, agreement: float, cfg: dict)
     return out
 
 
+def stress_mode(cfg: dict) -> str:
+    """'caution' (owner decision 2026-11-27): market stress is shown on every stock but does not
+    raise any stock's own risk label. 'block': the original §10.3 rule (R4 counts, Moderate -> High)."""
+    return str(cfg["risk"]["R4_regime"].get("stress_mode", "caution"))
+
+
 def composite(row: pd.Series, cfg: dict) -> str:
     c = cfg["risk"]["composite"]
-    labels = [row[d] for d in DIMS]
+    caution = stress_mode(cfg) == "caution"
+    # in caution mode a stressed market (R4 High) counts as neutral; a calm one still helps
+    labels = [MOD if (caution and d == "R4" and row[d] == HIGH) else row[d] for d in DIMS]
     n_low, n_high = labels.count(LOW), labels.count(HIGH)
     if any(row[d] == HIGH for d in c["high_if_any"]) or n_high >= c["high_min_high_count"]:
         return HIGH
@@ -79,10 +87,14 @@ def apply_labels(dims: pd.DataFrame, t: pd.DataFrame, regime: dict, cfg: dict) -
     log: list[dict] = []
     ps = regime.get("stressed_prob")
     if ps is not None and ps > cfg["risk"]["R4_regime"]["stressed_prob_high"]:
-        changed = sorted(comp.index[comp == MOD])
-        comp[comp == MOD] = HIGH
-        log.append({"override": "regime_stressed", "detail": f"stressed prob {ps:.2f} > threshold; Moderate -> High",
-                    "tickers": changed})
+        if stress_mode(cfg) == "block":
+            changed = sorted(comp.index[comp == MOD])
+            comp[comp == MOD] = HIGH
+            log.append({"override": "regime_stressed", "detail": f"stressed prob {ps:.2f} > threshold; Moderate -> High",
+                        "tickers": changed})
+        else:
+            log.append({"override": "regime_stressed", "detail": f"stressed prob {ps:.2f} > threshold; caution only: "
+                        "labels unchanged, new buys limited to Low-risk names", "tickers": []})
     illiquid = sorted(t.index[~t["liquid"].astype(bool)])
     if illiquid:
         comp[illiquid] = HIGH

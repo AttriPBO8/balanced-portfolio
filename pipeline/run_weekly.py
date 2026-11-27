@@ -138,6 +138,81 @@ def coverage_problems(portfolio, panel, close_D: dt.date) -> list[str]:
     return out
 
 
+def _last_prices(panel, close_D: dt.date) -> pd.Series:
+    c = panel.close.loc[:pd.Timestamp(close_D)].ffill()
+    return c.iloc[-1] if len(c) else pd.Series(dtype=float)
+
+
+def portfolio_rows(portfolio, panel, close_D: dt.date, sectors: dict) -> list[dict]:
+    """Each holding with its CAD market value, for the dashboard's account and sector split."""
+    last = _last_prices(panel, close_D)
+    rows = []
+    for r in portfolio.positions.itertuples(index=False):
+        px = last.get(r.ticker)
+        px = None if px is None or not np.isfinite(px) else float(px)
+        rows.append({"account": r.account_type, "ticker": r.ticker, "sector": sectors.get(r.ticker, "Unclassified"),
+                     "quantity": float(r.quantity), "price_cad": None if px is None else round(px, 2),
+                     "value_cad": None if px is None else round(px * float(r.quantity), 2),
+                     "acb_cad": round(float(r.book_cost_acb_cad), 2)})
+    return rows
+
+
+def worst_drop(prices: pd.Series, window: int = 126) -> tuple[float | None, str | None, str | None]:
+    """Largest peak-to-trough fall inside any `window`-trading-day span (126 ~ 6 months, which also
+    covers every 3-month span). Returns (drop as a positive fraction, peak date, trough date)."""
+    p = prices.dropna()
+    if len(p) < 20:
+        return None, None, None
+    peak = p.rolling(window, min_periods=1).max()
+    dd = 1 - p / peak
+    t = dd.idxmax()
+    if not np.isfinite(dd.loc[t]) or dd.loc[t] <= 0:
+        return 0.0, None, None
+    pk = p.loc[:t].tail(window).idxmax()
+    return float(dd.loc[t]), pk.date().isoformat(), t.date().isoformat()
+
+
+def house_money(rows: list[dict], panel, close_D: dt.date, start: dt.date, years: int = 5) -> dict:
+    """Owner idea (2026-11-27): per holding, gain over cost minus what a repeat of its worst 3-6 month
+    fall would take off today's value. Losers count (negative). No market-wide haircut. History is the
+    model's data range (from settings.data.start_date, at most 5 years), so the 2020 crash is excluded."""
+    since = max(start, close_D - dt.timedelta(days=int(365.25 * years)))
+    px = panel.adj_close.loc[pd.Timestamp(since):pd.Timestamp(close_D)]
+    out, total, total_cost = [], 0.0, 0.0
+    for r in rows:
+        if not r.get("value_cad"):
+            continue
+        drop, pk, tr = worst_drop(px[r["ticker"]]) if r["ticker"] in px.columns else (None, None, None)
+        gain = r["value_cad"] - r["acb_cad"]
+        at_risk = None if drop is None else r["value_cad"] * drop
+        hm = None if at_risk is None else gain - at_risk
+        # High Risk Fund (owner, 2026-11-27): same, but the fall is applied to the amount invested (cost)
+        at_risk_cost = None if drop is None else r["acb_cad"] * drop
+        hrf = None if at_risk_cost is None else gain - at_risk_cost
+        if hm is not None:
+            total += hm
+            total_cost += hrf
+        out.append({"ticker": r["ticker"], "account": r["account"], "value_cad": r["value_cad"], "acb_cad": r["acb_cad"],
+                    "gain_cad": round(gain, 2), "worst_drop": None if drop is None else round(drop, 4),
+                    "drop_from": pk, "drop_to": tr, "at_risk_cad": None if at_risk is None else round(at_risk, 2),
+                    "house_money_cad": None if hm is None else round(hm, 2),
+                    "at_risk_cost_cad": None if at_risk_cost is None else round(at_risk_cost, 2),
+                    "high_risk_fund_cad": None if hrf is None else round(hrf, 2)})
+    out.sort(key=lambda x: -(x["house_money_cad"] if x["house_money_cad"] is not None else -1e18))
+    return {"total_cad": round(total, 2), "high_risk_fund_total_cad": round(total_cost, 2), "since": since.isoformat(), "window": "worst fall within any 6-month (126 trading day) span",
+            "rows": out}
+
+
+def price_history(panel, close_D: dt.date, tickers: list[str], days: int = 126) -> dict:
+    """Last ~6 months of closes (CAD) for the dashboard's pop-up charts."""
+    c = panel.close.loc[:pd.Timestamp(close_D)].tail(days)
+    out = {"dates": [d.date().isoformat() for d in c.index], "series": {}}
+    for t in tickers:
+        if t in c.columns:
+            out["series"][t] = [None if not np.isfinite(v) else round(float(v), 2) for v in c[t].values]
+    return out
+
+
 def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=None, cfg_overrides: dict | None = None,
                force_reissue: str | None = None, fail_at: str | None = None, decision_date: dt.date | None = None,
                alerts: Alerts | None = None, as_of_today: bool = False) -> dict:
@@ -255,6 +330,11 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
             "close_used": close_D.isoformat(),
             "fx": panel.fx, "held_outside_lists": held_extra, "uncovered_holdings": uncovered,
         }
+        callouts_doc["portfolio"] = portfolio_rows(portfolio, wk["panel"], close_D, cfg["sectors"])
+        callouts_doc["house_money"] = house_money(callouts_doc["portfolio"], wk["panel"], close_D, start)
+        callouts_doc["price_history"] = price_history(wk["panel"], close_D, sorted(
+            {c["ticker"] for k in ("callouts", "holdings_review", "watchlist", "high_risk_ideas")
+             for c in callouts_doc.get(k) or []} | {r["ticker"] for r in callouts_doc["portfolio"]}))
         perf.update(common)
         perf["decision_date"] = D.isoformat()
         perf["news"] = _news_stats(root)

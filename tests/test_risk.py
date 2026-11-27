@@ -31,9 +31,23 @@ def test_any_of_r3_r5_r7_high_is_high(cfg, dim):
     assert composite(row(**{dim: "High"}), cfg) == "High"
 
 
+def _block(cfg):
+    import copy
+    c = copy.deepcopy(cfg)
+    c["risk"]["R4_regime"]["stress_mode"] = "block"
+    return c
+
+
 def test_three_highs_is_high(cfg):
-    assert composite(row(R1="High", R2="High", R4="High"), cfg) == "High"
+    assert composite(row(R1="High", R2="High", R3="High"), cfg) == "High"
+    assert composite(row(R1="High", R2="High", R4="High"), _block(cfg)) == "High"
     assert composite(row(R1="High", R2="High"), cfg) == "Moderate"
+
+
+def test_stress_is_caution_not_a_block(cfg):
+    # caution (default): a stressed market alone never makes a stock High
+    assert composite(row(R1="High", R2="High", R4="High"), cfg) == "Moderate"
+    assert composite(row(R4="High"), cfg) == "Low"
 
 
 def _table():
@@ -55,7 +69,19 @@ def test_dimension_thresholds(cfg):
     assert list(d["R7"]) == ["Low", "Moderate", "High"]
 
 
+def test_stress_caution_keeps_labels(cfg):
+    t = _table()
+    reg = {"stressed_prob": 0.8, "calm_prob": 0.2}
+    d = dimension_labels(t, reg, 0.6, cfg)
+    assert set(d["R4"]) == {"High"}                      # still shown on every stock
+    comp, log = apply_labels(d, t, reg, cfg)
+    calm, _ = apply_labels(dimension_labels(t, {"stressed_prob": 0.3, "calm_prob": 0.5}, 0.6, cfg), t, reg, cfg)
+    assert log[0]["override"] == "regime_stressed" and log[0]["tickers"] == []
+    assert list(comp) == list(calm)
+
+
 def test_overrides_logged_in_order(cfg):
+    cfg = _block(cfg)
     t = _table()
     reg = {"stressed_prob": 0.8, "calm_prob": 0.2}
     d = dimension_labels(t, reg, 0.6, cfg)

@@ -19,6 +19,14 @@ Delete the lines you did not trade, correct shares, price and fee, and submit. T
 
 **Projected value** is the blended score turned into an expected 3-month return with Grinold's rule (`projection_ic` x the stock's 3-month volatility x the score as a z-score), times the amount traded, minus that trade's commission and spread. It orders the list; it is a ranking estimate, not a forecast.
 
+## Dashboard
+
+Summary tiles (portfolio value, gain vs cost, House money, this week's trades, market reading), then the trade cards. **Tap any card** (or any row in the holdings review, watch list or high-risk ideas) for a pop-up with two explanations, *In plain words* and *Financial detail*, and four charts: 6-month price with next week's likely range, rating percentile, what moved the rating (TreeSHAP), and the seven risk checks. Close it with ×, Esc or a click outside. **Portfolio split** shows the TFSA and RRSP separately by stock and by sector, then both together.
+
+**House money** is a sizing guide for the high-risk ideas list. For each holding: gain over cost, minus today's value × the stock's worst fall inside any 3- or 6-month span since the data start (2021, at most 5 years, so the 2020 crash is excluded). Losing holdings count against it; no extra market-crash allowance is added. **High Risk Fund** is the same calculation with the fall applied to the amount invested (cost) instead of today's value. Both totals are shown in a tile and per holding in their own section.
+
+**Market stress is a caution** (`stress_mode: caution` in `config/risk.yaml`, the default since 2026-11-27): the regime still shows on every stock and limits new buys to Low-risk names, but it no longer turns stocks High risk or triggers sells on its own. `stress_mode: block` restores the original rule.
+
 ## High-risk ideas
 
 A separate weekly list (`settings.high_risk`, up to 10) of the stocks the models expect to rise most next week that the main list leaves out. They may have a High risk label, a recent structural break, earnings next week or a size/sector breach; data-quality checks (liquidity, price, history, data gaps) still apply. Each has a **target price for one week** (price x (1 + the calibrated 5-day expected return from M6)) and the 80% conformal range, and says why it is outside the main list. Not actions: no shares, no account, not counted in the caps. In `callouts.json` as `high_risk_ideas`.

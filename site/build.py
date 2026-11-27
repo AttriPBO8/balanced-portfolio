@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
 from common.config import load_config  # noqa: E402
 from common.dates import utc_now  # noqa: E402
 from pipeline import state as st  # noqa: E402
+from callouts import explain as ex  # noqa: E402
 
 NOTICES = [
     "Recommendations only. Not investment advice. The owner places all orders.",
@@ -32,33 +33,70 @@ NOTICES = [
 ]
 
 CSS = """
-:root{--bg:#f7f7f5;--fg:#1d1d1b;--muted:#6b6b66;--card:#fff;--line:#e2e1dc;--low:#1f7a4d;--low-bg:#e3f3ea;
---mod:#8a5a00;--mod-bg:#fbf0d9;--high:#a1261c;--high-bg:#f9e1de;--accent:#2f5fa7;--banner:#fff6d6;
---s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--grid:#e6e5e0}
-@media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ecebe6;--muted:#9c9b94;--card:#201f1d;--line:#34332f;
---low:#6fd3a0;--low-bg:#17352a;--mod:#f0c46a;--mod-bg:#3a2e12;--high:#ff8f84;--high-bg:#42201c;--accent:#8fb4ff;--banner:#3a3416;
---s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--grid:#2e2d2a}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-header,main{max-width:1100px;margin:0 auto;padding:16px}h1{font-size:22px;margin:8px 0}h2{font-size:18px;margin:28px 0 10px}
-nav a{margin-right:14px;color:var(--accent);text-decoration:none;font-size:14px}.notices{font-size:13px;color:var(--muted)}
-.banner{background:var(--banner);border:1px solid var(--line);padding:10px 12px;border-radius:8px;margin:8px 0}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:8px 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-.tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600}
+:root{--bg:#f4f5f7;--fg:#16181d;--muted:#667085;--card:#fff;--line:#e4e7ec;--soft:#f9fafb;
+--low:#067647;--low-bg:#dcfae6;--mod:#93370d;--mod-bg:#fef0c7;--high:#b42318;--high-bg:#fee4e2;--accent:#2e5bd8;--accent-bg:#eaf0ff;
+--banner:#fffaeb;--banner-line:#fedf89;--buy:#067647;--sell:#b42318;--hero1:#1d2b53;--hero2:#2e5bd8;
+--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--grid:#eaecf0;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--fg:#eceef2;--muted:#98a2b3;--card:#181b21;--line:#2a2f37;--soft:#1e2229;
+--low:#75e0a7;--low-bg:#0b3a24;--mod:#fec84b;--mod-bg:#4a2a07;--high:#fda29b;--high-bg:#55160c;--accent:#84a9ff;--accent-bg:#1c2a4d;
+--banner:#2b2410;--banner-line:#5c4813;--buy:#75e0a7;--sell:#fda29b;--hero1:#121a33;--hero2:#1f3d99;
+--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--grid:#252a32;--shadow:0 1px 2px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.hero{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:#fff;padding:22px 0 64px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+.hero h1{font-size:24px;margin:0 0 2px;letter-spacing:-.01em}.hero .sub{opacity:.8;font-size:13px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}nav a{color:#fff;text-decoration:none;font-size:13px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.12)}
+nav a:hover{background:rgba(255,255,255,.24)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:-44px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.kpi .v{font-size:24px;font-weight:700;margin-top:2px;letter-spacing:-.01em}
+.kpi .d{font-size:12px;color:var(--muted)}.up{color:var(--buy)}.down{color:var(--sell)}
+main{padding-bottom:40px}h2{font-size:19px;margin:34px 0 12px;letter-spacing:-.01em}h3{font-size:15px;margin:22px 0 8px}
+.notices{font-size:12px;color:var(--muted);margin:14px 0 0}
+.banner{background:var(--banner);border:1px solid var(--banner-line);padding:10px 14px;border-radius:10px;margin:10px 0;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:10px 0;box-shadow:var(--shadow);overflow-x:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
+.tag{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600;margin:1px 2px 1px 0;white-space:nowrap}
 .Low{color:var(--low);background:var(--low-bg)}.Moderate{color:var(--mod);background:var(--mod-bg)}.High{color:var(--high);background:var(--high-bg)}
 .pass{color:var(--low)}.warn{color:var(--mod)}.fail{color:var(--high)}.na{color:var(--muted)}
-details summary{cursor:pointer;list-style:none}details summary::-webkit-details-marker{display:none}
-.co{border-left:4px solid var(--line)}.co.ACTION{border-left-color:var(--accent)}.muted{color:var(--muted);font-size:13px}
-.cls{font-weight:700;font-size:12px;letter-spacing:.02em}.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+details summary{cursor:pointer}.muted{color:var(--muted);font-size:13px}.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .chart{position:relative}.chart svg{width:100%;height:auto;display:block}.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;margin:4px 0}
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;display:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .bars{display:flex;gap:3px;align-items:flex-end;height:48px}.bars span{flex:1;background:var(--s1);border-radius:3px 3px 0 0;min-height:1px}
-.btn{display:inline-block;background:var(--accent);color:var(--bg);padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin:4px 10px 4px 0}
-.btn.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}h3{font-size:15px;margin:20px 0 6px}
-.pv{font-weight:600}
-@media (max-width:640px){td,th{padding:5px 4px}.hide-sm{display:none}}
+.btn{display:inline-block;background:var(--accent);color:#fff;padding:9px 15px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px;margin:4px 10px 4px 0;border:0;cursor:pointer}
+.btn.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
+.co{all:unset;box-sizing:border-box;display:block;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);transition:transform .12s,box-shadow .12s;position:relative;overflow:hidden}
+.co:hover,.co:focus-visible{transform:translateY(-2px);box-shadow:0 6px 18px rgba(16,24,40,.12);outline:none}
+.co:focus-visible{box-shadow:0 0 0 3px var(--accent-bg),0 0 0 4px var(--accent)}
+.co::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line)}
+.co.BUY::before{background:var(--buy)}.co.SELL::before{background:var(--sell)}.co.IDEA::before{background:var(--accent)}
+.co .top{display:flex;justify-content:space-between;align-items:center;gap:8px}.co .tk{font-size:18px;font-weight:700}
+.pill{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--soft);border:1px solid var(--line)}
+.pill.BUY{color:var(--buy);background:var(--low-bg);border-color:transparent}.pill.SELL{color:var(--sell);background:var(--high-bg);border-color:transparent}
+.co .what{margin:8px 0 6px;font-weight:600}.co .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.co .more{margin-top:8px;font-size:13px;color:var(--accent);font-weight:600}
+.meter{height:6px;border-radius:99px;background:var(--grid);overflow:hidden;margin-top:8px}.meter span{display:block;height:100%;background:var(--accent);border-radius:99px}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px;align-items:start}
+.donut{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.donut svg{width:150px;height:150px;flex:none}
+.lg{font-size:13px;flex:1;min-width:150px}.lg div{display:flex;justify-content:space-between;gap:10px;padding:2px 0;border-bottom:1px dashed var(--line)}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.stack{display:flex;height:16px;border-radius:99px;overflow:hidden;margin:6px 0}.stack span{display:block;height:100%}
+.modal{position:fixed;inset:0;background:rgba(10,14,25,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:4vh 12px;overflow:auto}
+.modal.open{display:flex}.dlg{background:var(--card);color:var(--fg);border-radius:18px;max-width:860px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.35);position:relative}
+.dlg header{padding:18px 20px 0}.dlg .x{position:absolute;right:12px;top:10px;font-size:26px;line-height:1;background:transparent;border:0;color:var(--muted);cursor:pointer;padding:6px 10px;border-radius:8px}
+.dlg .x:hover{background:var(--soft)}.dlg .body{padding:6px 20px 20px}
+.tabs{display:flex;gap:6px;margin:12px 0 4px;border-bottom:1px solid var(--line)}.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;font:inherit;font-weight:600;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent)}
+.pane{display:none}.pane.on{display:block}.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,370px),1fr));gap:12px;margin-top:12px}
+.cbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px}.cbox h4{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.cbox svg{width:100%;height:auto;display:block}table.fin th{width:38%;text-transform:none;font-size:13px;letter-spacing:0}
+@media (max-width:640px){td,th{padding:6px 4px}.hide-sm{display:none}.kpi .v{font-size:20px}}
 """
 
 
@@ -163,36 +201,6 @@ def perf_table(series: dict) -> str:
             + rows + "</table>")
 
 
-def callout_card(c: dict) -> str:
-    is_action = c["class"].startswith("ACTION")
-    open_attr = ""  # all collapsed to a one-line summary; High risk never opens by default (§14.3)
-    dims = " ".join(f'{k}:{tag(v)}' for k, v in sorted(c["risk_breakdown"].items()))
-    checks = "".join(f'<tr><td>{e(k["name"])}</td><td class="{e(k["result"]).replace("/", "")}">{e(k["result"])}</td>'
-                     f'<td>{e(k["detail"])}</td></tr>' for k in c["checks"])
-    shap = ", ".join(f'{e(s["feature"])} ({s["value"]:+.3f})' for s in c.get("shap_top_features", []))
-    ci = c.get("conformal_interval_80") or [None, None]
-    ci_txt = f"{ci[0]:+.1%} to {ci[1]:+.1%}" if None not in ci else "n/a"
-    addon = ""
-    if c.get("addon"):
-        a = c["addon"]
-        addon = (f'<p><b>Add-on assessment:</b> {e(a["verdict"])} ({e(a["mode"])}), new ACB ${a["new_acb_cad"]:,.2f}, '
-                 f'new weight {fmt_pct(a["new_weight"])}, risk share change '
-                 f'{signed(a["risk_contrib_change"], ".1%")}. '
-                 + " ".join(e(r) + "." for r in a["reasons"]) + "</p>")
-    trade = (f'{e(c["account"])} · {c["shares"]} sh @ ~${c["est_price_cad"]:,.2f} · est. cost ${c["est_cost_cad"]:,.2f}'
-             if is_action else (f'reason: {e(c["demoted_reason"])}' if c.get("demoted_reason") else ""))
-    pv = c.get("projected_value_cad")
-    if pv is not None:
-        trade = (f'<span class="pv">projected value {"+" if pv >= 0 else "−"}${abs(pv):,.0f}</span> '
-                 f'({signed(c.get("projected_return_3m"), ".1%")} over 3 months) · ' + trade)
-    return f"""<details class="card co {'ACTION' if is_action else ''}"{open_attr}>
-<summary><b>#{c['rank']} {e(c['ticker'])}</b> <span class="cls">{e(c['class'])}</span> {tag(c['risk_label'])}
-<span class="muted">score {fmt_pct(c['score_pct'])} · {trade}</span><br><span>{e(c['rationale'])}</span></summary>
-<p class="muted">Risk breakdown: {dims}</p>
-<p class="muted">80% interval (next week): {ci_txt} · SHAP drivers: {shap or 'n/a'} · warnings: {e(', '.join(c['warnings']) or 'none')}</p>
-{addon}<table><tr><th>Check</th><th>Result</th><th>Detail</th></tr>{checks}</table></details>"""
-
-
 SIDE = {"ACTION_BUY_NEW": "BUY", "ACTION_ADD": "BUY", "ACTION_TRIM": "SELL", "ACTION_EXIT": "SELL"}
 
 
@@ -208,23 +216,297 @@ def confirm_url(repo: str, cal: dict, fee: float) -> str:
     return f"https://github.com/{repo}/issues/new?{q}"
 
 
-def mini_table(items: list[dict]) -> str:
-    rows = "".join(f"<tr><td><b>{e(c['ticker'])}</b></td><td class='cls'>{e(c['class'])}</td><td>{tag(c['risk_label'])}</td>"
-                   f"<td>{fmt_pct(c['score_pct'])}</td><td>{e(c['rationale'])}</td></tr>" for c in items)
-    return ("<table><tr><th>Ticker</th><th>Status</th><th>Risk</th><th>Score</th><th>Note</th></tr>" + rows + "</table>")
+PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#8e5cd9", "#e0407b", "#14a3b8", "#7a8b25", "#b0653a", "#5b6b8c",
+           "#c94f4f", "#3f9b5a"]
+KIND = {"ACTION_BUY_NEW": "BUY", "ACTION_ADD": "BUY", "ACTION_TRIM": "SELL", "ACTION_EXIT": "SELL"}
 
 
-def high_risk_table(items: list[dict]) -> str:
+class Items:
+    """Everything that opens a pop-up: id -> the fields the charts need plus both explanations."""
+
+    def __init__(self, ctx: dict):
+        self.ctx, self.data = ctx, {}
+
+    def add(self, c: dict) -> str:
+        k = f"i{len(self.data)}"
+        keep = ("ticker", "class", "risk_label", "risk_breakdown", "score_pct", "m1_pct", "m2_pct", "shap_top_features",
+                "conformal_interval_80", "est_price_cad", "shares", "account", "projected_value_cad", "projected_return_3m",
+                "price_cad", "target_price_1w", "range_80_1w", "expected_return_1w", "sector")
+        d = {f: c.get(f) for f in keep if c.get(f) is not None}
+        d["label"] = ex.CLASS_LABEL.get(c["class"], c["class"])
+        d["layman"], d["financial"] = ex.layman(c, self.ctx), ex.financial(c, self.ctx)
+        self.data[k] = d
+        return k
+
+
+def _arc(cx, cy, r0, r1, a0, a1) -> str:
+    import math
+    if a1 - a0 >= 2 * math.pi - 1e-9:
+        a1 = a0 + 2 * math.pi - 1e-4
+    p = lambda r, a: (cx + r * math.sin(a), cy - r * math.cos(a))
+    big = 1 if a1 - a0 > math.pi else 0
+    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = p(r1, a0), p(r1, a1), p(r0, a1), p(r0, a0)
+    return (f"M{x0:.2f},{y0:.2f}A{r1},{r1} 0 {big} 1 {x1:.2f},{y1:.2f}L{x2:.2f},{y2:.2f}"
+            f"A{r0},{r0} 0 {big} 0 {x3:.2f},{y3:.2f}Z")
+
+
+def donut(parts: list[tuple[str, float]], title: str, center: str, colors: dict | None = None, top: int = 8) -> str:
+    import math
+    parts = sorted([(k, v) for k, v in parts if v and v > 0], key=lambda x: -x[1])
+    if len(parts) > top:
+        parts = parts[:top - 1] + [("Other", sum(v for _, v in parts[top - 1:]))]
+    tot = sum(v for _, v in parts) or 1
+    a, segs, leg = 0.0, [], []
+    for i, (k, v) in enumerate(parts):
+        col = (colors or {}).get(k, PALETTE[i % len(PALETTE)])
+        a1 = a + 2 * math.pi * v / tot
+        segs.append(f"<path d='{_arc(75, 75, 46, 70, a, a1)}' fill='{col}' stroke='var(--card)' stroke-width='1.5'>"
+                    f"<title>{e(k)}: ${v:,.0f} ({v / tot:.0%})</title></path>")
+        leg.append(f"<div><span><i style='background:{col}'></i>{e(k)}</span><span>${v:,.0f} · {v / tot:.0%}</span></div>")
+        a = a1
+    return (f"<div><div class='muted' style='font-weight:600'>{e(title)}</div><div class='donut'>"
+            f"<svg viewBox='0 0 150 150' role='img' aria-label='{e(title)}'>{''.join(segs)}"
+            f"<text x='75' y='72' text-anchor='middle' font-size='15' font-weight='700' fill='var(--fg)'>{e(center)}</text>"
+            f"<text x='75' y='90' text-anchor='middle' font-size='10' fill='var(--muted)'>market value</text></svg>"
+            f"<div class='lg'>{''.join(leg)}</div></div></div>")
+
+
+def portfolio_section(cal: dict) -> str:
+    rows = [r for r in cal.get("portfolio") or [] if r.get("value_cad")]
+    if not rows:
+        return "<p class='muted'>No holdings with prices yet.</p>"
+    sectors = sorted({r["sector"] for r in rows})
+    scol = {k: PALETTE[i % len(PALETTE)] for i, k in enumerate(sectors)}
+    cash = cal.get("cash_cad") or {}
+    out = ["<div class='grid2'>"]
+    for acct in sorted({r["account"] for r in rows}):
+        rs = [r for r in rows if r["account"] == acct]
+        val = sum(r["value_cad"] for r in rs)
+        cost = sum(r["acb_cad"] for r in rs)
+        gain = val - cost
+        by_sector: dict[str, float] = {}
+        for r in rs:
+            by_sector[r["sector"]] = by_sector.get(r["sector"], 0) + r["value_cad"]
+        out.append(f"<div class='card'><div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px'>"
+                   f"<b style='font-size:16px'>{e(acct)}</b><span class='muted'>{len(rs)} holdings · value ${val:,.0f} · "
+                   f"cost ${cost:,.0f} · <span class='{'up' if gain >= 0 else 'down'}'>{'+' if gain >= 0 else '−'}${abs(gain):,.0f} "
+                   f"({gain / cost:+.1%})</span> · cash ${cash.get(acct, 0):,.0f}</span></div>"
+                   f"<div class='split' style='margin-top:10px'>"
+                   + donut([(r["ticker"], r["value_cad"]) for r in rs], "By stock", f"${val / 1000:,.1f}k")
+                   + donut(list(by_sector.items()), "By sector", f"${val / 1000:,.1f}k", scol) + "</div></div>")
+    out.append("</div>")
+    # both accounts: sector bar + holdings table
+    tot = sum(r["value_cad"] for r in rows)
+    by_sector = {}
+    for r in rows:
+        by_sector[r["sector"]] = by_sector.get(r["sector"], 0) + r["value_cad"]
+    bar = "".join(f"<span title='{e(k)}: ${v:,.0f} ({v / tot:.0%})' style='width:{v / tot * 100:.2f}%;background:{scol[k]}'></span>"
+                  for k, v in sorted(by_sector.items(), key=lambda x: -x[1]))
+    leg = " ".join(f"<span class='muted' style='margin-right:10px'><i style='display:inline-block;width:10px;height:10px;border-radius:3px;"
+                   f"background:{scol[k]};margin-right:4px'></i>{e(k)} {v / tot:.0%}</span>"
+                   for k, v in sorted(by_sector.items(), key=lambda x: -x[1]))
+    trs = "".join(f"<tr><td><b>{e(r['ticker'])}</b></td><td>{e(r['account'])}</td><td class='hide-sm'>{e(r['sector'])}</td>"
+                  f"<td>{r['quantity']:g}</td><td>${r['price_cad']:,.2f}</td><td>${r['value_cad']:,.0f}</td>"
+                  f"<td class='hide-sm'>${r['acb_cad']:,.0f}</td><td class='hide-sm {'up' if r['value_cad'] >= r['acb_cad'] else 'down'}'>"
+                  f"{(r['value_cad'] - r['acb_cad']) / r['acb_cad']:+.1%}</td><td>{r['value_cad'] / tot:.1%}</td></tr>"
+                  for r in sorted(rows, key=lambda r: -r["value_cad"]) if r["acb_cad"])
+    out.append(f"<div class='card'><b>Both accounts by sector</b> <span class='muted'>· ${tot:,.0f} invested at market</span>"
+               f"<div class='stack' role='img' aria-label='sector split'>{bar}</div><div>{leg}</div>"
+               "<details style='margin-top:8px'><summary class='muted'>All holdings</summary><table><tr><th>Ticker</th><th>Account</th>"
+               "<th class='hide-sm'>Sector</th><th>Shares</th><th>Price</th><th>Value</th><th class='hide-sm'>Cost</th><th class='hide-sm'>Gain</th>"
+               f"<th>Weight</th></tr>{trs}</table></details></div>")
+    return "".join(out)
+
+
+def sugg_card(c: dict, items: Items) -> str:
+    k = items.add(c)
+    kind = KIND.get(c["class"], "")
+    sh, px = c.get("shares") or 0, c.get("est_price_cad") or 0
+    if kind == "BUY":
+        what = f"Buy {sh} shares in {e(c['account'])} · ≈ ${sh * px:,.0f}"
+    elif kind == "SELL":
+        what = f"Sell {sh} shares in {e(c['account'])} · ≈ ${sh * px:,.0f}"
+    else:
+        what = e(ex.REASON_PLAIN.get(c.get("demoted_reason") or "", "Good trade idea, not for this week"))
+        what = "Not this week: " + what
+    pv = c.get("projected_value_cad")
+    s = c.get("score_pct") or 0
+    return (f"<button class='co {kind}' data-item='{k}' aria-haspopup='dialog'><div class='top'><span class='tk'>#{c['rank']} {e(c['ticker'])}</span>"
+            f"<span class='pill {kind}'>{e(ex.CLASS_LABEL.get(c['class'], c['class']))}</span></div>"
+            f"<div class='what'>{what}</div><div class='meta'><span>Risk {tag(c['risk_label'])}</span>"
+            f"<span>Rating {s:.0%}</span>"
+            + (f"<span>Value {'+' if pv >= 0 else '−'}${abs(pv):,.0f}</span>" if pv is not None else "")
+            + (f"<span>{e(c.get('sector'))}</span>" if c.get("sector") else "")
+            + f"</div><div class='meter' title='rating percentile'><span style='width:{s * 100:.0f}%'></span></div>"
+            "<div class='more'>Why? Tap for the explanation →</div></button>")
+
+
+def mini_table(items_: list[dict], items: Items) -> str:
+    rows = "".join(f"<tr class='click' data-item='{items.add(c)}' tabindex='0'><td><b>{e(c['ticker'])}</b></td>"
+                   f"<td>{e(ex.CLASS_LABEL.get(c['class'], c['class']))}</td><td>{tag(c['risk_label'])}</td>"
+                   f"<td>{fmt_pct(c['score_pct'])}</td><td class='hide-sm muted'>{e(c['rationale'])}</td>"
+                   f"<td style='color:var(--accent);font-weight:600'>Why →</td></tr>" for c in items_)
+    return ("<div class='card'><table><tr><th>Ticker</th><th>Status</th><th>Risk</th><th>Rating</th><th class='hide-sm'>Note</th><th></th></tr>"
+            + rows + "</table></div>")
+
+
+def high_risk_table(ideas: list[dict], items: Items) -> str:
     rows = "".join(
-        f"<tr><td>{x['rank']}</td><td><b>{e(x['ticker'])}</b>{' <span class=muted>(held)</span>' if x.get('held') else ''}</td>"
+        f"<tr class='click' data-item='{items.add(dict(x, **{'class': 'IDEA'}))}' tabindex='0'><td>{x['rank']}</td>"
+        f"<td><b>{e(x['ticker'])}</b>{' <span class=muted>(held)</span>' if x.get('held') else ''}</td>"
         f"<td>${x['price_cad']:,.2f}</td><td><b>${x['target_price_1w']:,.2f}</b></td>"
         f"<td class='hide-sm'>${x['range_80_1w'][0]:,.2f} to ${x['range_80_1w'][1]:,.2f}</td>"
         f"<td>{signed(x['expected_return_1w'], '.1%')}</td><td class='hide-sm'>{fmt_pct(x['score_pct'])}</td>"
-        f"<td>{tag(x['risk_label'])}</td><td class='hide-sm muted'>{e('; '.join(x['outside_criteria']))}</td></tr>"
-        for x in items)
-    return ("<table><tr><th>#</th><th>Ticker</th><th>Price</th><th>Target, 1 week</th><th class='hide-sm'>80% range</th>"
-            "<th>Expected</th><th class='hide-sm'>Score</th><th>Risk</th><th class='hide-sm'>Outside the main list because</th></tr>"
-            + rows + "</table>")
+        f"<td>{tag(x['risk_label'])}</td><td style='color:var(--accent);font-weight:600'>Why →</td></tr>"
+        for x in ideas)
+    return ("<div class='card'><table><tr><th>#</th><th>Ticker</th><th>Price</th><th>Target, 1 week</th><th class='hide-sm'>80% range</th>"
+            "<th>Expected</th><th class='hide-sm'>Rating</th><th>Risk</th><th></th></tr>" + rows + "</table></div>")
+
+
+MODAL_JS = r"""
+(function(){
+var D=JSON.parse(document.getElementById('popup-data').textContent),PH=D.ph||{dates:[],series:{}};
+var m=document.getElementById('pop'),dlg=m.querySelector('.dlg'),last=null;
+var DIM={R1:'Volatility',R2:'Vol trend',R3:'Forecast uncertainty',R4:'Market regime',R5:'Structural break',R6:'Model agreement',R7:'Liquidity/data'};
+var FN=D.fn||{};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function money(v){return '$'+Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+function priceChart(it){
+  var s=PH.series[it.ticker];if(!s)return '<p class="muted">No price history saved for this week.</p>';
+  var pts=[];for(var i=0;i<s.length;i++)if(s[i]!=null)pts.push([i,s[i]]);if(pts.length<2)return '';
+  var px=it.est_price_cad||it.price_cad||pts[pts.length-1][1],band=null,tgt=null;
+  if(it.range_80_1w){band=[it.range_80_1w[0],it.range_80_1w[1]];tgt=it.target_price_1w;}
+  else if(it.conformal_interval_80){band=[px*(1+it.conformal_interval_80[0]),px*(1+it.conformal_interval_80[1])];}
+  var vals=pts.map(function(p){return p[1];});if(band)vals=vals.concat(band);
+  var lo=Math.min.apply(null,vals),hi=Math.max.apply(null,vals),pad=(hi-lo)*.08||1;lo-=pad;hi+=pad;
+  var W=380,H=190,L=46,R=band?54:12,T=8,B=22,n=s.length;
+  var x=function(i){return L+(W-L-R)*i/(n-1);},y=function(v){return T+(H-T-B)*(1-(v-lo)/(hi-lo));};
+  var g='';for(var j=0;j<4;j++){var v=lo+(hi-lo)*j/3;g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--grid)"/><text x="'+(L-5)+'" y="'+(y(v)+4)+'" font-size="10" text-anchor="end" fill="var(--muted)">$'+v.toFixed(v<20?2:0)+'</text>';}
+  var d='M'+pts.map(function(p){return x(p[0]).toFixed(1)+','+y(p[1]).toFixed(1);}).join('L');
+  var area=d+'L'+x(pts[pts.length-1][0]).toFixed(1)+','+(H-B)+'L'+x(pts[0][0]).toFixed(1)+','+(H-B)+'Z';
+  var up=pts[pts.length-1][1]>=pts[0][1],col=up?'var(--buy)':'var(--sell)';
+  var out='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="price chart">'+g+'<path d="'+area+'" fill="'+col+'" opacity=".10"/><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/>';
+  var lx=x(n-1),ly=y(pts[pts.length-1][1]);out+='<circle cx="'+lx+'" cy="'+ly+'" r="4" fill="'+col+'" stroke="var(--card)" stroke-width="2"/>';
+  if(band){var bx=W-R+8;out+='<rect x="'+bx+'" y="'+y(band[1])+'" width="18" height="'+Math.max(2,y(band[0])-y(band[1]))+'" rx="4" fill="var(--accent)" opacity=".25"/>'+
+    '<line x1="'+lx+'" x2="'+bx+'" y1="'+ly+'" y2="'+y(tgt||px)+'" stroke="var(--accent)" stroke-dasharray="3 3"/>'+
+    '<circle cx="'+(bx+9)+'" cy="'+y(tgt||px)+'" r="3.5" fill="var(--accent)"/><text x="'+(bx+9)+'" y="'+(H-6)+'" font-size="10" text-anchor="middle" fill="var(--muted)">next wk</text>';}
+  var dd=PH.dates;out+='<text x="'+L+'" y="'+(H-6)+'" font-size="10" fill="var(--muted)">'+esc(dd[0]||'')+'</text><text x="'+(W-R)+'" y="'+(H-6)+'" font-size="10" text-anchor="end" fill="var(--muted)">'+esc(dd[dd.length-1]||'')+'</text></svg>';
+  var chg=(pts[pts.length-1][1]/pts[0][1]-1)*100;
+  return out+'<div class="muted">6 months: '+(chg>=0?'+':'')+chg.toFixed(1)+'% · last '+money(pts[pts.length-1][1])+(band?' · shaded: likely range next week, '+money(band[0])+' to '+money(band[1]):'')+'</div>';
+}
+function riskChart(it){
+  var rb=it.risk_breakdown||{},lv={Low:1,Moderate:2,High:3},o='<svg viewBox="0 0 380 '+(7*24+4)+'" role="img" aria-label="risk by dimension">',i=0;
+  Object.keys(DIM).forEach(function(k){var v=rb[k]||'Moderate',w=lv[v]*80,yy=i*24+2;
+    o+='<text x="0" y="'+(yy+15)+'" font-size="11" fill="var(--fg)">'+esc(DIM[k])+'</text><rect x="130" y="'+(yy+4)+'" width="240" height="14" rx="7" fill="var(--grid)"/>'+
+       '<rect x="130" y="'+(yy+4)+'" width="'+w+'" height="14" rx="7" fill="var(--'+(v==='Low'?'low':v==='High'?'high':'mod')+')"/><text x="'+(136+w)+'" y="'+(yy+15)+'" font-size="10" fill="var(--muted)">'+esc(v)+'</text>';i++;});
+  return o+'</svg><div class="muted">Overall: '+esc(it.risk_label)+'. Longer bar = riskier.</div>';
+}
+function driverChart(it){
+  var f=it.shap_top_features||[];if(!f.length)return '<p class="muted">No driver data.</p>';
+  var mx=Math.max.apply(null,f.map(function(a){return Math.abs(a.value);}))||1,o='<svg viewBox="0 0 380 '+(f.length*30+6)+'" role="img" aria-label="what moved the rating">';
+  f.forEach(function(a,i){var w=Math.abs(a.value)/mx*110,yy=i*30+4,pos=a.value>0;
+    o+='<text x="0" y="'+(yy+14)+'" font-size="11" fill="var(--fg)">'+esc(FN[a.feature]||a.feature)+'</text><line x1="260" x2="260" y1="'+yy+'" y2="'+(yy+22)+'" stroke="var(--line)"/>'+
+       '<rect x="'+(pos?260:260-w)+'" y="'+(yy+4)+'" width="'+w+'" height="14" rx="4" fill="var(--'+(pos?'buy':'sell')+')" opacity=".85"/>';});
+  return o+'</svg><div class="muted">Green pushes the rating up, red pulls it down.</div>';
+}
+function scoreChart(it){
+  var r=[['Blended rating',it.score_pct],['Model 1 (LightGBM)',it.m1_pct],['Model 2 (Ridge)',it.m2_pct]].filter(function(a){return a[1]!=null;});
+  var o='<svg viewBox="0 0 380 '+(r.length*30+16)+'" role="img" aria-label="rating percentile">';
+  r.forEach(function(a,i){var yy=i*30+4,w=a[1]*230;o+='<text x="0" y="'+(yy+14)+'" font-size="11" fill="var(--fg)">'+esc(a[0])+'</text><rect x="130" y="'+(yy+4)+'" width="230" height="14" rx="7" fill="var(--grid)"/>'+
+     '<rect x="130" y="'+(yy+4)+'" width="'+w+'" height="14" rx="7" fill="var(--accent)"/><text x="'+(136+w)+'" y="'+(yy+15)+'" font-size="10" fill="var(--muted)">'+Math.round(a[1]*100)+'%</text>';});
+  return o+'<line x1="245" x2="245" y1="0" y2="'+(r.length*30+4)+'" stroke="var(--muted)" stroke-dasharray="2 3"/><text x="245" y="'+(r.length*30+14)+'" font-size="9" text-anchor="middle" fill="var(--muted)">middle</text></svg><div class="muted">Percentile among all stocks scored this week (100% = best).</div>';
+}
+function open(id,src){var it=D.items[id];if(!it)return;last=src;
+  dlg.querySelector('.ttl').innerHTML=esc(it.ticker)+' <span class="pill">'+esc(it.label)+'</span> <span class="tag '+esc(it.risk_label)+'">'+esc(it.risk_label)+' risk</span>';
+  dlg.querySelector('.sub2').textContent=(it.sector||'')+(it.account?' · '+it.account:'');
+  dlg.querySelector('#pane-l').innerHTML=it.layman;dlg.querySelector('#pane-f').innerHTML=it.financial;
+  dlg.querySelector('.charts').innerHTML='<div class="cbox"><h4>Price, last 6 months (CAD)</h4>'+priceChart(it)+'</div><div class="cbox"><h4>Rating</h4>'+scoreChart(it)+'</div>'+
+    '<div class="cbox"><h4>What moved the rating</h4>'+driverChart(it)+'</div><div class="cbox"><h4>Risk, 7 checks</h4>'+riskChart(it)+'</div>';
+  tab('l');m.classList.add('open');document.body.style.overflow='hidden';dlg.querySelector('.x').focus();}
+function close(){m.classList.remove('open');document.body.style.overflow='';if(last)last.focus();}
+function tab(w){['l','f'].forEach(function(k){var b=dlg.querySelector('[data-tab='+k+']');b.setAttribute('aria-selected',k===w);dlg.querySelector('#pane-'+k).classList.toggle('on',k===w);});}
+document.addEventListener('click',function(ev){var t=ev.target.closest('[data-item]');if(t){open(t.getAttribute('data-item'),t);return;}
+  var b=ev.target.closest('[data-tab]');if(b){tab(b.getAttribute('data-tab'));return;}
+  if(ev.target===m||ev.target.closest('.x'))close();});
+document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&m.classList.contains('open'))close();
+  if((ev.key==='Enter'||ev.key===' ')&&ev.target.matches&&ev.target.matches('tr[data-item]')){ev.preventDefault();open(ev.target.getAttribute('data-item'),ev.target);}});
+})();
+"""
+
+MODAL_HTML = ("<div class='modal' id='pop' role='dialog' aria-modal='true' aria-labelledby='pop-ttl'><div class='dlg'>"
+              "<button class='x' aria-label='Close'>×</button><header><div class='ttl' id='pop-ttl' style='font-size:20px;font-weight:700'></div>"
+              "<div class='sub2 muted'></div><div class='tabs' role='tablist'><button data-tab='l' role='tab'>In plain words</button>"
+              "<button data-tab='f' role='tab'>Financial detail</button></div></header><div class='body'>"
+              "<div class='pane' id='pane-l'></div><div class='pane' id='pane-f'></div><div class='charts'></div>"
+              "<p class='muted' style='margin-top:12px'>Press Esc, click outside, or × to close. Not investment advice.</p></div></div></div>")
+
+
+def _money_signed(v: float) -> str:
+    return f"<span class='{'up' if v >= 0 else 'down'}'>{'+' if v >= 0 else '−'}${abs(v):,.0f}</span>"
+
+
+def _bar(v: float, mx: float) -> str:
+    w = abs(v) / mx * 46
+    side = "left:50%" if v >= 0 else "right:50%"
+    return (f"<div style='position:relative;height:12px;min-width:90px'><span style='position:absolute;left:50%;top:-2px;bottom:-2px;"
+            f"border-left:1px solid var(--line)'></span><span style='position:absolute;top:0;height:12px;border-radius:4px;{side};"
+            f"width:{w:.1f}%;background:var(--{'buy' if v >= 0 else 'sell'});opacity:.85'></span></div>")
+
+
+def house_section(hm: dict) -> str:
+    rows = [r for r in hm["rows"] if r.get("house_money_cad") is not None]
+    t = hm["total_cad"]
+    f = hm.get("high_risk_fund_total_cad")
+    mx = max([abs(r["house_money_cad"]) for r in rows] + [abs(r.get("high_risk_fund_cad") or 0) for r in rows] + [1])
+    trs = []
+    for r in rows:
+        hrf = r.get("high_risk_fund_cad")
+        trs.append(f"<tr><td><b>{e(r['ticker'])}</b> <span class='muted'>{e(r['account'])}</span></td>"
+                   f"<td class='hide-sm'>${r['acb_cad']:,.0f}</td><td>${r['value_cad']:,.0f}</td><td>{_money_signed(r['gain_cad'])}</td>"
+                   f"<td class='hide-sm' style='white-space:nowrap' title='{e(r.get('drop_from'))} to {e(r.get('drop_to'))}'>{r['worst_drop']:.0%}"
+                   f"<span class='muted'> ({e((r.get('drop_from') or '')[:7])} → {e((r.get('drop_to') or '')[:7])})</span></td>"
+                   f"<td style='white-space:nowrap'><b>{_money_signed(r['house_money_cad'])}</b>{_bar(r['house_money_cad'], mx)}</td>"
+                   + (f"<td style='white-space:nowrap'><b>{_money_signed(hrf)}</b>{_bar(hrf, mx)}</td>" if hrf is not None else "<td></td>")
+                   + "</tr>")
+    tile = lambda name, v, sub: (f"<div class='kpi' style='box-shadow:none'><div class='k'>{name}</div>"
+                                 f"<div class='v' style='font-size:28px'>{_money_signed(v)}</div><div class='d'>{sub}</div></div>")
+    return ("<h2 id='house'>House money and High Risk Fund</h2><div class='card'><div class='grid'>"
+            + tile("House money", t, "fall measured on today's value")
+            + (tile("High Risk Fund", f, "fall measured on what you invested") if f is not None else "") + "</div>"
+            "<p>Two ways to size money for the high-risk ideas list. For each holding, start from your gain over what you paid, then "
+            "subtract a repeat of the stock's <b>worst fall</b>: the biggest drop inside any 3- or 6-month stretch since "
+            f"{e(hm['since'])}. <b>House money</b> applies that fall to today's value; <b>High Risk Fund</b> applies it to the amount "
+            "you invested. Example: paid $1,000, now $1,200, worst fall 15%: House money $200 − $180 = $20; High Risk Fund "
+            "$200 − $150 = $50. Losing holdings count against both totals. Market-wide crashes are not added on top (your choice), "
+            "and the 2020 crash is outside the data range. A sizing guide, not a guarantee.</p>"
+            "<table><tr><th>Holding</th><th class='hide-sm'>Invested</th><th>Value</th><th>Gain</th><th class='hide-sm'>Worst fall</th>"
+            "<th>House money</th><th>High Risk Fund</th></tr>" + "".join(trs) + "</table></div>")
+
+
+def kpis(cal: dict) -> str:
+    rows = [r for r in cal.get("portfolio") or [] if r.get("value_cad")]
+    val = sum(r["value_cad"] for r in rows)
+    cost = sum(r["acb_cad"] for r in rows)
+    cash = sum((cal.get("cash_cad") or {}).values())
+    gain = val - cost
+    acts = [c for c in cal["callouts"] if c["class"] in KIND]
+    nb = sum(1 for c in acts if KIND[c["class"]] == "BUY")
+    reg = cal.get("regime") or {}
+    tiles = [("Portfolio value", f"${val + cash:,.0f}", f"${val:,.0f} invested + ${cash:,.0f} cash"),
+             ("Gain vs cost", f"<span class='{'up' if gain >= 0 else 'down'}'>{'+' if gain >= 0 else '−'}${abs(gain):,.0f}</span>",
+              f"{gain / cost:+.1%} on ${cost:,.0f}" if cost else ""),
+             ("This week", f"{len(acts)} trades", f"{nb} buy · {len(acts) - nb} sell"),
+             ("Market", e((reg.get("label") or "n/a").capitalize()),
+              f"stress probability {fmt_pct(reg.get('stressed_prob'))}" + (" · caution" if reg.get("label") == "stressed" else ""))]
+    hm = cal.get("house_money")
+    if hm:
+        t = hm["total_cad"]
+        f = hm.get("high_risk_fund_total_cad")
+        tiles.insert(2, ("House money", _money_signed(t),
+                         (f"High Risk Fund {_money_signed(f)} · " if f is not None else "")
+                         + "<a href='#house' style='color:inherit'>details →</a>"))
+    return "<div class='kpis'>" + "".join(f"<div class='kpi'><div class='k'>{k}</div><div class='v'>{v}</div><div class='d'>{d}</div></div>"
+                                          for k, v, d in tiles) + "</div>"
 
 
 def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
@@ -262,23 +544,54 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
                            + ". Check the ticker in positions.csv (.TO for TSX).")
         banners += [w for w in (cal.get("position_warnings") or []) if "dated after" in w]
 
+    fee = float(cfg["settings"]["fees"]["per_trade_cad"])
+    ctx = {"fee": fee, "regime": (cal or {}).get("regime") or {}, "stressed": ((cal or {}).get("regime") or {}).get("label") == "stressed",
+           "ic": (cal or {}).get("projection_ic", 0.05),
+           "held": {r["ticker"]: r for r in (cal or {}).get("portfolio") or []}}
+    if cal:
+        try:
+            import csv
+            with (st.weekly_dir(root, latest_d) / "scores.csv").open() as fh:
+                ctx["n_scored"] = sum(1 for _ in csv.DictReader(fh))
+        except OSError:
+            pass
+    items = Items(ctx)
+    sub = (f"Week of {e(cal['decision_date'])} · prices from the close of {e(cal.get('close_used') or cal['decision_date'])}"
+           + (" · on-demand run" if cal.get("run_kind") == "on_demand_today" else "") if cal else "No published week yet")
     parts = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-             f"<title>Weekly Stock Callouts</title><style>{CSS}</style></head><body><header><h1>Weekly stock callouts</h1>"
-             "<nav><a href='#week'>This week</a><a href='#highrisk'>High-risk ideas</a><a href='#budget'>Account budget</a><a href='#risk'>Risk posture</a>"
-             "<a href='#perf'>Performance</a><a href='#backtest'>Backtest</a><a href='#history'>History</a><a href='#health'>Run health</a></nav>"
-             "<div class='notices'>" + "<br>".join(e(n) for n in NOTICES) + "</div>"
-             + "".join(f"<div class='banner'>{e(b)}</div>" for b in banners) + "</header><main>"]
+             f"<title>Weekly Stock Callouts</title><style>{CSS}</style></head><body><div class='hero'><div class='wrap'>"
+             f"<h1>Weekly stock callouts</h1><div class='sub'>{sub}</div>"
+             "<nav><a href='#week'>This week</a><a href='#portfolio'>Portfolio split</a><a href='#house'>House money</a><a href='#highrisk'>High-risk ideas</a>"
+             "<a href='#budget'>Account budget</a><a href='#risk'>Risk posture</a><a href='#perf'>Performance</a>"
+             "<a href='#backtest'>Backtest</a><a href='#history'>History</a><a href='#health'>Run health</a></nav></div></div>"
+             "<main class='wrap'>" + (kpis(cal) if cal else "")
+             + "".join(f"<div class='banner'>{e(b)}</div>" for b in banners)
+             + "<div class='notices'>" + " · ".join(e(n) for n in NOTICES) + "</div>"]
 
     # 1. this week
     parts.append("<h2 id='week'>This week's trade suggestions</h2>")
     if cal:
-        parts.append(f"<p class='muted'>Decision date {e(cal['decision_date'])} · computed {e(cal['computed_at_utc'])} · "
-                     f"run <span class='mono'>{e(cal['run_id'])[:8]}</span> · model card <span class='mono'>{e(cal['model_card_hash'])[:12]}</span>"
+        if ctx["stressed"]:
+            parts.append("<div class='banner'><b>Market caution.</b> The market model reads a stressed phase "
+                         f"({fmt_pct(ctx['regime'].get('stressed_prob'))} probability). New buys are limited to Low-risk stocks; "
+                         "stress alone no longer marks stocks High risk or triggers sells.</div>")
+        n_act = sum(1 for c in cal["callouts"] if c["class"] in SIDE)
+        parts.append(f"<p>{n_act} to do this week (green edge = buy, red = sell), best projected value first, then good ideas that "
+                     "don't fit this week's trade limit or cash. <b>Tap any card for the reasons</b>, in plain words or in financial "
+                     "detail, with charts.</p>")
+        repo = os.environ.get("GITHUB_REPOSITORY") or (cfg["settings"].get("github") or {}).get("repository")
+        if repo and cal.get("status") == "published":
+            blank = dict(cal, callouts=[])
+            parts.append(f"<p><a class='btn' href='{e(confirm_url(repo, cal, fee))}' target='_blank' rel='noopener'>Confirm trades I made</a>"
+                         f"<a class='btn alt' href='{e(confirm_url(repo, blank, fee))}' target='_blank' rel='noopener'>Record another trade</a>"
+                         "<br><span class='muted'>Opens a GitHub issue with the trades filled in. Delete what you didn't do, fix prices, "
+                         "submit. Your trades, holdings and cash update within a few minutes and the issue gets a summary.</span></p>")
+        parts.append("<div class='cards'>" + "".join(sugg_card(c, items) for c in cal["callouts"]) + "</div>"
+                     if cal["callouts"] else "<p class='muted'>No suggestions this week.</p>")
+        parts.append(f"<p class='muted'>Run <span class='mono'>{e(cal['run_id'])[:8]}</span> · model card "
+                     f"<span class='mono'>{e(cal['model_card_hash'])[:12]}</span> · computed {e(cal['computed_at_utc'])}"
                      f"{' · ' + e(cal['list_note']) if cal.get('list_note') else ''}</p>")
         info = []
-        if cal.get("close_used"):
-            info.append(f"prices: close of {e(cal['close_used'])}"
-                        + (" (on-demand run dated today)" if cal.get("run_kind") == "on_demand_today" else ""))
         fx = cal.get("fx") or {}
         if fx.get("usdcad"):
             info.append(f"US holdings ({e(', '.join(fx.get('converted', [])))}) converted at USD/CAD {fx['usdcad']:.4f} "
@@ -288,31 +601,21 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
                         + e(", ".join(cal["held_outside_lists"])))
         if info:
             parts.append("<p class='muted'>" + " · ".join(info) + "</p>")
-        n_act = sum(1 for c in cal["callouts"] if c["class"] in SIDE)
-        parts.append(f"<p>{n_act} to do this week (blue edge), best projected value first. The rest are good trades that don't fit "
-                     "this week's trade limit or cash, also by projected value. Projected value is the score turned into an expected "
-                     "3-month return on the amount traded, minus the commission: a ranking estimate, not a promise.</p>")
-        repo = os.environ.get("GITHUB_REPOSITORY") or (cfg["settings"].get("github") or {}).get("repository")
-        if repo and cal.get("status") == "published":
-            fee = float(cfg["settings"]["fees"]["per_trade_cad"])
-            blank = dict(cal, callouts=[])
-            parts.append(f"<p><a class='btn' href='{e(confirm_url(repo, cal, fee))}' target='_blank' rel='noopener'>Confirm trades I made</a>"
-                         f"<a class='btn alt' href='{e(confirm_url(repo, blank, fee))}' target='_blank' rel='noopener'>Record another trade</a>"
-                         "<br><span class='muted'>Opens a GitHub issue with the trades filled in. Delete what you didn't do, fix prices, "
-                         "submit. Your trades, holdings and cash update within a few minutes and the issue gets a summary.</span></p>")
-        parts += [callout_card(c) for c in cal["callouts"]]
         if cal.get("holdings_review"):
-            parts.append("<h3>Your other holdings</h3>" + mini_table(cal["holdings_review"]))
+            parts.append("<h3>Your other holdings</h3>" + mini_table(cal["holdings_review"], items))
         if cal.get("watchlist"):
-            parts.append("<h3>Watch list</h3>" + mini_table(cal["watchlist"]))
+            parts.append("<h3>Watch list</h3>" + mini_table(cal["watchlist"], items))
+        parts.append("<h2 id='portfolio'>Portfolio split</h2>" + portfolio_section(cal))
+        if cal.get("house_money"):
+            parts.append(house_section(cal["house_money"]))
     if cal and cal.get("high_risk_ideas") is not None:
         parts.append("<h2 id='highrisk'>High-risk ideas for next week</h2>"
                      "<div class='banner'>Separate from the 10 suggestions and <b>not</b> checked the same way: these may have a High "
                      "risk label, a recent structural break, earnings next week, or break the size or sector limits. They are the "
                      "stocks the models expect to rise most next week. The target is the expected price in one week; 4 times in 5 "
                      "the price should land inside the range. Not counted in your trade limits. If you buy one, record it with "
-                     "Record another trade.</div>")
-        parts.append(high_risk_table(cal["high_risk_ideas"]) if cal["high_risk_ideas"] else
+                     "Record another trade. Tap a row for the reasons.</div>")
+        parts.append(high_risk_table(cal["high_risk_ideas"], items) if cal["high_risk_ideas"] else
                      "<p class='muted'>No stock met the bar this week (expected rise next week and a score in the top half).</p>")
     # 2. budget
     parts.append("<h2 id='budget'>Account budget</h2><div class='grid'>")
@@ -330,7 +633,7 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
     if cal:
         r = cal["regime"]
         sp = cal["starter_phase"]
-        parts.append(f"<div class='card'><b>Regime</b><br>{e(r['label'])} · stressed prob {fmt_pct(r.get('stressed_prob'))}</div>")
+        parts.append(f"<div class='card'><b>Regime</b><br>{e(r['label'])} · stressed prob {fmt_pct(r.get('stressed_prob'))}<br><span class='muted'>Stress is a caution: it limits new buys to Low-risk stocks but does not change risk labels.</span></div>")
         parts.append(f"<div class='card'><b>Starter phase</b><br>{'active' if sp['active'] else 'complete (sector caps on)'} · "
                      f"${sp['invested_cad']:,.0f} of ${sp['threshold_cad']:,.0f} ({fmt_pct(sp['invested_cad'] / sp['threshold_cad'] if sp['threshold_cad'] else 0)})</div>")
         ov = cal.get("overrides_active") or []
@@ -415,7 +718,10 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
                  f"<div class='card'><b>News collection</b> (forward-only, shadow)<br>"
                  + ("<br>".join(f"{e(k)}: {v['items']} items, match rate {fmt_pct(v.get('match_rate'))}" for k, v in (news.get('by_source') or {}).items()) or "no stats yet")
                  + news_gate_text(perf.get("news_gate")) + "</div></div>")
-    parts.append(f"<p class='muted'>Generated {e(now.isoformat(timespec='seconds'))} from committed artifacts.</p></main></body></html>")
+    popup = {"items": items.data, "ph": (cal or {}).get("price_history") or {"dates": [], "series": {}}, "fn": ex.FEATURE_NAME}
+    parts.append(f"<p class='muted'>Generated {e(now.isoformat(timespec='seconds'))} from committed artifacts.</p></main>{MODAL_HTML}"
+                 "<script type='application/json' id='popup-data'>" + json.dumps(popup).replace("</", "<\\/") + "</script>"
+                 f"<script>{MODAL_JS}</script></body></html>")
     out.mkdir(parents=True, exist_ok=True)
     path = out / "index.html"
     path.write_text("\n".join(parts))
