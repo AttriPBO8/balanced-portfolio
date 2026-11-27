@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import html
 
+from common.tickers import is_us_listed
+
 FEATURE_PLAIN = {
     "mom_20d": "its price trend over the last month",
     "mom_60d": "its price trend over the last 3 months",
@@ -127,6 +129,10 @@ def layman(c: dict, ctx: dict) -> str:
     if cls == "ACTION_BUY_NEW":
         parts.append(f"<p><b>Buy {sh} shares of {t}</b> in your {acct} for about <b>{money(value)}</b> "
                      f"({money(px)} each, plus {money(fee)} commission).</p>")
+        if is_us_listed(c.get("ticker", "")):
+            parts.append("<p>It is a US stock, picked by the monthly US screen. It goes in your RRSP because US dividends "
+                         "paid into a TFSA lose 15% to US tax. Prices here are in Canadian dollars at today's exchange "
+                         "rate; your broker will charge in US dollars or convert.</p>")
     elif cls == "ACTION_ADD":
         parts.append(f"<p><b>Buy {sh} more shares of {t}</b> in your {acct} for about <b>{money(value)}</b>. "
                      f"You hold {held.get('quantity', 0):g} now.</p>")

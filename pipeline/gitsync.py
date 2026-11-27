@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from pathlib import Path
 import sys
 import time
 
@@ -72,6 +73,10 @@ def resolve_conflicts() -> list[str]:
 
 
 def sync(message: str, paths: list[str], attempts: int = 4) -> bool:
+    paths = [p for p in paths if Path(p).exists()]   # e.g. data/universe before the first US screen
+    if not paths:
+        print("nothing to commit")
+        return False
     git("add", "--", *paths)
     if git("diff", "--cached", "--quiet", check=False).returncode == 0:
         print("nothing to commit")

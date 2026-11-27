@@ -24,6 +24,7 @@ from common.config import load_config  # noqa: E402
 from common.dates import utc_now  # noqa: E402
 from pipeline import state as st  # noqa: E402
 from callouts import explain as ex  # noqa: E402
+from common.tickers import is_us_listed  # noqa: E402
 
 NOTICES = [
     "Recommendations only. Not investment advice. The owner places all orders.",
@@ -45,8 +46,19 @@ CSS = """
 .hero{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:#fff;padding:22px 0 64px}
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px}
 .hero h1{font-size:24px;margin:0 0 2px;letter-spacing:-.01em}.hero .sub{opacity:.8;font-size:13px}
-nav{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}nav a{color:#fff;text-decoration:none;font-size:13px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.12)}
+
+.topbar{position:sticky;top:0;z-index:20;background:var(--hero1);box-shadow:0 1px 0 rgba(255,255,255,.08),0 2px 8px rgba(0,0,0,.15)}
+nav{display:flex;gap:6px;padding:8px 0;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+nav a{color:#fff;text-decoration:none;font-size:13px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.12);white-space:nowrap}
 nav a:hover{background:rgba(255,255,255,.24)}
+h2[id]{scroll-margin-top:56px}#hood{scroll-margin-top:56px}
+h3.grp{display:flex;align-items:center;gap:8px;margin:18px 0 6px}.pill{font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--line,#ddd)}
+details.fold{margin:14px 0}details.fold>summary{cursor:pointer;font-weight:600;padding:6px 0}
+details.hood{margin:28px 0 8px;border-top:1px solid var(--line,#ddd);padding-top:6px}
+details.hood>summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:12px 0}
+details.hood>summary::-webkit-details-marker{display:none}
+details.hood>summary>span:first-child{font-size:20px;font-weight:700}
+details.hood>summary>span:first-child::before{content:'\\25B8  ';}details.hood[open]>summary>span:first-child::before{content:'\\25BE  '}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:-44px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
 .kpi .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.kpi .v{font-size:24px;font-weight:700;margin-top:2px;letter-spacing:-.01em}
@@ -337,6 +349,7 @@ def sugg_card(c: dict, items: Items) -> str:
             f"<span>Rating {s:.0%}</span>"
             + (f"<span>Value {'+' if pv >= 0 else '−'}${abs(pv):,.0f}</span>" if pv is not None else "")
             + (f"<span>{e(c.get('sector'))}</span>" if c.get("sector") else "")
+            + ("<span>US · RRSP only</span>" if is_us_listed(c["ticker"]) else "")
             + f"</div><div class='meter' title='rating percentile'><span style='width:{s * 100:.0f}%'></span></div>"
             "<div class='more'>Why? Tap for the explanation →</div></button>")
 
@@ -364,6 +377,10 @@ def high_risk_table(ideas: list[dict], items: Items) -> str:
 
 
 MODAL_JS = r"""
+(function(){function openHood(){var h=location.hash;if(!h)return;var t=document.getElementById(h.slice(1));
+var d=t&&t.closest?t.closest('details'):null;if(t&&t.tagName==='DETAILS')d=t;if(d&&!d.open){d.open=true;t.scrollIntoView();}}
+window.addEventListener('hashchange',openHood);document.addEventListener('DOMContentLoaded',openHood);})();
+
 (function(){
 var D=JSON.parse(document.getElementById('popup-data').textContent),PH=D.ph||{dates:[],series:{}};
 var m=document.getElementById('pop'),dlg=m.querySelector('.dlg'),last=null;
@@ -559,11 +576,12 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
     sub = (f"Week of {e(cal['decision_date'])} · prices from the close of {e(cal.get('close_used') or cal['decision_date'])}"
            + (" · on-demand run" if cal.get("run_kind") == "on_demand_today" else "") if cal else "No published week yet")
     parts = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-             f"<title>Weekly Stock Callouts</title><style>{CSS}</style></head><body><div class='hero'><div class='wrap'>"
+             f"<title>Weekly Stock Callouts</title><style>{CSS}</style></head><body>"
+             "<div class='topbar'><div class='wrap'><nav><a href='#week'>This week</a><a href='#portfolio'>Portfolio</a>"
+             "<a href='#house'>House money</a><a href='#highrisk'>High-risk ideas</a><a href='#hood'>Under the hood</a></nav></div></div>"
+             "<div class='hero'><div class='wrap'>"
              f"<h1>Weekly stock callouts</h1><div class='sub'>{sub}</div>"
-             "<nav><a href='#week'>This week</a><a href='#portfolio'>Portfolio split</a><a href='#house'>House money</a><a href='#highrisk'>High-risk ideas</a>"
-             "<a href='#budget'>Account budget</a><a href='#risk'>Risk posture</a><a href='#perf'>Performance</a>"
-             "<a href='#backtest'>Backtest</a><a href='#history'>History</a><a href='#health'>Run health</a></nav></div></div>"
+             "</div></div>"
              "<main class='wrap'>" + (kpis(cal) if cal else "")
              + "".join(f"<div class='banner'>{e(b)}</div>" for b in banners)
              + "<div class='notices'>" + " · ".join(e(n) for n in NOTICES) + "</div>"]
@@ -586,8 +604,17 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
                          f"<a class='btn alt' href='{e(confirm_url(repo, blank, fee))}' target='_blank' rel='noopener'>Record another trade</a>"
                          "<br><span class='muted'>Opens a GitHub issue with the trades filled in. Delete what you didn't do, fix prices, "
                          "submit. Your trades, holdings and cash update within a few minutes and the issue gets a summary.</span></p>")
-        parts.append("<div class='cards'>" + "".join(sugg_card(c, items) for c in cal["callouts"]) + "</div>"
-                     if cal["callouts"] else "<p class='muted'>No suggestions this week.</p>")
+        todo = [c for c in cal["callouts"] if c["class"] in SIDE]
+        ideas = [c for c in cal["callouts"] if c["class"] not in SIDE]
+        if todo:
+            parts.append(f"<h3 class='grp'>To do this week <span class='pill'>{len(todo)}</span></h3>"
+                         "<div class='cards'>" + "".join(sugg_card(c, items) for c in todo) + "</div>")
+        if ideas:
+            parts.append(f"<h3 class='grp'>Good ideas, not this week <span class='pill'>{len(ideas)}</span></h3>"
+                         "<p class='muted'>Worth a look, but they don't fit this week's trade limit, cash or risk rules.</p>"
+                         "<div class='cards'>" + "".join(sugg_card(c, items) for c in ideas) + "</div>")
+        if not cal["callouts"]:
+            parts.append("<p class='muted'>No suggestions this week.</p>")
         parts.append(f"<p class='muted'>Run <span class='mono'>{e(cal['run_id'])[:8]}</span> · model card "
                      f"<span class='mono'>{e(cal['model_card_hash'])[:12]}</span> · computed {e(cal['computed_at_utc'])}"
                      f"{' · ' + e(cal['list_note']) if cal.get('list_note') else ''}</p>")
@@ -596,6 +623,8 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
         if fx.get("usdcad"):
             info.append(f"US holdings ({e(', '.join(fx.get('converted', [])))}) converted at USD/CAD {fx['usdcad']:.4f} "
                         f"({e(fx.get('date'))})")
+        if cal.get("us_screened"):
+            info.append(f"{len(cal['us_screened'])} US stocks from the monthly screen were scored too (buys go to the RRSP only)")
         if cal.get("held_outside_lists"):
             info.append("reviewed but never suggested as new buys (not on the stock list): "
                         + e(", ".join(cal["held_outside_lists"])))
@@ -603,6 +632,19 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
             parts.append("<p class='muted'>" + " · ".join(info) + "</p>")
         if cal.get("holdings_review"):
             parts.append("<h3>Your other holdings</h3>" + mini_table(cal["holdings_review"], items))
+        if cal.get("us_screened"):
+            us = cal["us_screened"]
+            meta = {}
+            mp = root / "data/universe/us_screened.csv"
+            if mp.exists():
+                import csv
+                with mp.open() as fh:
+                    meta = {r["ticker"]: r for r in csv.DictReader(fh)}
+            rows = "".join(f"<tr><td>{i}</td><td><b>{e(t)}</b></td><td>{e(meta.get(t, {}).get('name', ''))}</td>"
+                           f"<td>{e(meta.get(t, {}).get('sector', ''))}</td></tr>" for i, t in enumerate(us, 1))
+            parts.append(f"<details class='fold'><summary>US stocks being watched ({len(us)}) · from the monthly screen, "
+                         "scored every week, buys go to the RRSP</summary><div class='card'><table><tr><th>#</th><th>Ticker</th>"
+                         f"<th>Name</th><th>Sector</th></tr>{rows}</table></div></details>")
         if cal.get("watchlist"):
             parts.append("<h3>Watch list</h3>" + mini_table(cal["watchlist"], items))
         parts.append("<h2 id='portfolio'>Portfolio split</h2>" + portfolio_section(cal))
@@ -618,6 +660,8 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
         parts.append(high_risk_table(cal["high_risk_ideas"], items) if cal["high_risk_ideas"] else
                      "<p class='muted'>No stock met the bar this week (expected rise next week and a score in the top half).</p>")
     # 2. budget
+    parts.append("<details class='hood' id='hood'><summary><span>Under the hood</span><span class='muted'>account budget, risk "
+                 "posture, performance, backtest, history and run health</span></summary>")
     parts.append("<h2 id='budget'>Account budget</h2><div class='grid'>")
     if cal:
         for a, b in cal["budgets"].items():
@@ -719,7 +763,7 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
                  + ("<br>".join(f"{e(k)}: {v['items']} items, match rate {fmt_pct(v.get('match_rate'))}" for k, v in (news.get('by_source') or {}).items()) or "no stats yet")
                  + news_gate_text(perf.get("news_gate")) + "</div></div>")
     popup = {"items": items.data, "ph": (cal or {}).get("price_history") or {"dates": [], "series": {}}, "fn": ex.FEATURE_NAME}
-    parts.append(f"<p class='muted'>Generated {e(now.isoformat(timespec='seconds'))} from committed artifacts.</p></main>{MODAL_HTML}"
+    parts.append(f"</details><p class='muted'>Generated {e(now.isoformat(timespec='seconds'))} from committed artifacts.</p></main>{MODAL_HTML}"
                  "<script type='application/json' id='popup-data'>" + json.dumps(popup).replace("</", "<\\/") + "</script>"
                  f"<script>{MODAL_JS}</script></body></html>")
     out.mkdir(parents=True, exist_ok=True)

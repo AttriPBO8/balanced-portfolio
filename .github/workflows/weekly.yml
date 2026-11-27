@@ -44,6 +44,9 @@ jobs:
       - name: Collect news (forward history)
         continue-on-error: true
         run: python -m ingest.news --no-google
+      - name: US screen (step 1, refreshed monthly)
+        continue-on-error: true
+        run: python -m pipeline.us_screen
       - name: Weekly run
         env:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -58,7 +61,7 @@ jobs:
         run: |
           git config user.name "callout-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          python -m pipeline.gitsync "weekly callouts $(date -u +%F) [run ${{ github.run_id }}]" artifacts state
+          python -m pipeline.gitsync "weekly callouts $(date -u +%F) [run ${{ github.run_id }}]" artifacts state data/universe
       - name: Build dashboard
         if: always()
         run: python site/build.py --out _site
