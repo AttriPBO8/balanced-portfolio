@@ -2,13 +2,18 @@
   "first_run_date": "2026-11-19",
   "last_success": {
     "daily": "2026-11-26",
-    "weekly": "2026-11-21"
+    "weekly": "2026-11-26"
   },
   "version": 1,
   "weekly": {
     "2026-11-21": {
       "input_hash": "f48457e52f4cd33dca7ca41c4a4cd314196a552df5b2f5d6b3c6f571984cc3b0",
       "run_id": "b4dca1a3-d3d2-5d73-999d-04fd15c00445",
+      "status": "published"
+    },
+    "2026-11-26": {
+      "input_hash": "b63f7547728d0f275ab53c128461c0fb82721d912f236352c8dff6b2ec4b1904",
+      "run_id": "a6c8efcc-e450-58ea-957b-86135f19e405",
       "status": "published"
     }
   }

@@ -1,0 +1,112 @@
+{
+  "actions_scored": 0,
+  "as_of_utc": "2026-11-27T02:00:28Z",
+  "benchmarks_since_start": {
+    "XIC.TO": 0.03556,
+    "XIU.TO": 0.033352
+  },
+  "decision_date": "2026-11-26",
+  "git_sha": "9bab5a5e323a7a22ccd6ba649052f400d87818d9",
+  "hit_rate_as_if": null,
+  "live_replay": {
+    "nav": [
+      {
+        "XIC.TO": 15000.0,
+        "XIU.TO": 15000.0,
+        "baseline": 15000.0,
+        "callouts": 15000.0,
+        "date": "2026-11-21"
+      },
+      {
+        "XIC.TO": 15533.4,
+        "XIU.TO": 15409.88,
+        "baseline": 14995.94,
+        "callouts": 15000.0,
+        "date": "2026-11-26"
+      }
+    ],
+    "note": "As-if: follows every published ACTION callout with the backtest's starting cash; not your real account.",
+    "series": {
+      "XIC.TO": {
+        "cagr": null,
+        "max_drawdown": null,
+        "sharpe": null,
+        "total_return": null,
+        "vol": null,
+        "weeks": 2
+      },
+      "XIU.TO": {
+        "cagr": null,
+        "max_drawdown": null,
+        "sharpe": null,
+        "total_return": null,
+        "vol": null,
+        "weeks": 2
+      },
+      "baseline": {
+        "cagr": null,
+        "max_drawdown": null,
+        "sharpe": null,
+        "total_return": null,
+        "vol": null,
+        "weeks": 2
+      },
+      "callouts": {
+        "cagr": null,
+        "max_drawdown": null,
+        "sharpe": null,
+        "total_return": null,
+        "vol": null,
+        "weeks": 2
+      }
+    },
+    "start": "2026-11-21",
+    "weeks": 1
+  },
+  "low_confidence": false,
+  "model_card_hash": "d62548438577bd4774bd138947b01720a26c3ec7c7be91331eb073b371c61909",
+  "naive_baseline": null,
+  "news": {
+    "at_utc": "2026-11-27T01:59:34Z",
+    "by_source": {
+      "newsfile": {
+        "items": 25,
+        "match_rate": 0.04,
+        "matched": 1
+      }
+    },
+    "collected": 25,
+    "new": 25
+  },
+  "news_gate": {
+    "admitted": false,
+    "evaluated_weeks": 0,
+    "group": "tier3_news_events",
+    "mean_ic_improvement_5d": null,
+    "required_weeks": 26,
+    "shadow_weeks": 1,
+    "status": "shadow",
+    "weight": 0.2
+  },
+  "notes": [
+    "Short-window IC is a diagnostic only.",
+    "Baseline comparison: see live_replay and the backtest report."
+  ],
+  "rank_ic_live": {
+    "ic_5d_12m": null,
+    "ic_5d_1w": null,
+    "ic_5d_3m": null,
+    "ic_5d_6m": null,
+    "ic_63d_12m": null,
+    "ic_63d_1w": null,
+    "ic_63d_3m": null,
+    "ic_63d_6m": null
+  },
+  "run_id": "a6c8efcc-e450-58ea-957b-86135f19e405",
+  "validation_ic_blend": -0.014909,
+  "weekly_ic": [
+    {
+      "decision_date": "2026-11-21"
+    }
+  ]
+}
