@@ -63,14 +63,42 @@ def validate_config(cfg: dict) -> None:
         raise ConfigError("weekly_spread must be even or front_loaded")
     if caps["risk_exit_over_cap"] not in ("warn", "allow", "block"):
         raise ConfigError("risk_exit_over_cap must be warn, allow or block")
-    uni = cfg["universe"].get("tsx_core") or []
+    uni = candidate_list(cfg)
     missing = [t for t in uni if t not in cfg["sectors"]]
     if missing:
         raise ConfigError(f"tickers without a sector in sectors.yaml: {missing}")
 
 
 def universe(cfg: dict) -> list[str]:
+    """Every ticker the run scores: the TSX-Core list, the optional US list, and (set at run time
+    by with_holdings) anything the owner holds that is on neither list, so no holding goes unreviewed."""
+    u = cfg["universe"]
+    out: list[str] = []
+    for t in list(u.get("tsx_core") or []) + list(u.get("us_track") or []) + list(u.get("held_extra") or []):
+        if t not in out:
+            out.append(t)
+    return out
+
+
+def candidate_list(cfg: dict) -> list[str]:
+    """The owner's buy lists only (TSX-Core + US track), without the held-only additions."""
+    u = cfg["universe"]
+    return list(dict.fromkeys(list(u.get("tsx_core") or []) + list(u.get("us_track") or [])))
+
+
+def buy_list(cfg: dict) -> list[str]:
+    """Tickers that may be suggested as new buys: TSX-Core only (us_track is research only, §13.7)."""
     return list(cfg["universe"].get("tsx_core") or [])
+
+
+def with_holdings(cfg: dict, held: set[str] | list[str]) -> list[str]:
+    """Add held tickers that are not on the buy lists to this run's universe. Returns them."""
+    listed = set(candidate_list(cfg))
+    extra = sorted(t for t in set(held) if t not in listed)
+    cfg["universe"]["held_extra"] = extra
+    for t in extra:
+        cfg["sectors"].setdefault(t, "Unclassified")
+    return extra
 
 
 def enabled_accounts(cfg: dict) -> list[str]:

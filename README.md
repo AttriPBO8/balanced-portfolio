@@ -33,7 +33,11 @@ A separate weekly list (`settings.high_risk`, up to 10) of the stocks the models
 | `data/ledger/contributions.csv` | Contributions, withdrawals, dividends. |
 | `config/accounts.yaml` | TFSA and RRSP contribution room, once a year. |
 
-Tickers use Yahoo format: `RY.TO`, `CTC-A.TO`, `RCI-B.TO`.
+Tickers use Yahoo format. TSX listings need the `.TO` suffix: `RY.TO`, `CTC-A.TO`, `RCI-B.TO`. US listings have no suffix: `AMZN`, `DFUV`. A TSX stock entered without `.TO` (for example `CNR` instead of `CNR.TO`) stops the run with a message naming the fix, because Yahoo would read it as a different US symbol or nothing.
+
+**Holdings outside the stock list** (any stock or ETF you hold that is not one of the 68 TSX-Core names, including US listings) are priced, valued and reviewed every week in the holdings review, so nothing you hold is skipped. They are never suggested as new buys. US prices come in US dollars and are converted to CAD at each day's USD/CAD rate (Yahoo `CAD=X`), so every value on the dashboard is in CAD; the rate used is shown in `callouts.json` under `fx`. If a holding gets no prices (a typo, a delisting), the run opens a "Holdings without price data" issue.
+
+**Checks on your files.** The run stops with a line-numbered message if any of these is wrong: the same stock twice in one account in `positions.csv` (combine into one row); a date that is not `YYYY-MM-DD` or is in the future; a trade with quantity or price of 0 or less, or negative fees; negative cash; two rows for one account in `cash.csv`; a contribution amount of 0 or less (use kind `WITHDRAWAL` for money out); a `NONREG` row while NONREG is disabled in `config/accounts.yaml`; a ticker that is not a valid symbol or is missing `.TO`.
 
 ## How it runs
 
@@ -46,7 +50,13 @@ Tickers use Yahoo format: `RY.TO`, `CTC-A.TO`, `RCI-B.TO`.
 | `confirm.yml` | When you open a `Confirm trades` issue | Records the trades in the ledger and positions, replies with the new balances, closes the issue. |
 | `ci.yml` | Every push and PR | Full test suite. |
 
-GitHub can start scheduled jobs late (hours, at busy times), so the times above are the earliest start. If the dashboard has nothing by midday Saturday, run **weekly** by hand (Actions, weekly, Run workflow); the scheduled run then does nothing. Jobs save their results with `pipeline/gitsync.py`, which retries and merges `state/run_state.json` if two jobs finish close together.
+GitHub can start scheduled jobs late (hours, at busy times), so the times above are the earliest start. If the dashboard has nothing by midday Saturday, run **weekly** by hand (Actions, weekly, Run workflow); the scheduled run then does nothing.
+
+**Running on demand.** Actions → weekly → Run workflow has two choices under *Run date*:
+- `today` (the default): the set is dated today (Toronto time) and uses the latest TSX close on or before today. Use this mid-week, for example after updating your positions. It is saved under `artifacts/weekly/<today>/` and the next Saturday run still publishes its own set.
+- `saturday`: this week's regular set, dated last Saturday, using Friday's close. If that set is already published, nothing happens unless you fill in *force_reissue*.
+
+A positions file dated after the run date (for example positions updated Thursday, run dated last Saturday) is flagged on the dashboard; run with `today` to use them as current. Jobs save their results with `pipeline/gitsync.py`, which retries and merges `state/run_state.json` if two jobs finish close together.
 
 Failures, a missing weekly run, contribution-room warnings and IC divergence open a GitHub Issue.
 

@@ -11,6 +11,7 @@ from scipy.stats import norm
 from callouts import addon as addon_mod
 from callouts.checks import blocked, position_limit, run_checks, warnings_of
 from callouts.rules import bought_recently
+from common.config import buy_list
 from common.owner_inputs import Portfolio
 from models.covariance import risk_contrib_change
 
@@ -69,6 +70,7 @@ class Builder:
         self.allow = {a: inp.budgets[a]["weekly_allowance"] for a in inp.accounts}
         self.cash = {a: inp.portfolio.available_cash(a, inp.decision_date) for a in inp.accounts}
         self.log: list[str] = []
+        self.buyable = set(buy_list(inp.cfg))
 
     # ------------------------------------------------------------------ helpers
     def est_cost(self, value: float) -> float:
@@ -148,6 +150,8 @@ class Builder:
             held = t in self.value_by_ticker.index
 
             if not held:
+                if t not in self.buyable:
+                    continue   # research-only (us_track): watch list and high-risk list only
                 chk = self.checks_for(t, nominal_new)
                 want = flag or s >= cc["buy_new_quantile"]
                 if regime_stressed and comp != "Low":
