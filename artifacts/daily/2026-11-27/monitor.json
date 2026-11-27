@@ -1,0 +1,645 @@
+{
+  "as_of_utc": "2026-11-27T11:26:53Z",
+  "banners": [],
+  "computed_at_utc": "2026-11-27T11:24:58Z",
+  "data_gaps": {
+    "ABX.TO": 0,
+    "AEM.TO": 0,
+    "ALA.TO": 0,
+    "AQN.TO": 0,
+    "ARX.TO": 0,
+    "ATD.TO": 0,
+    "BAM.TO": 0,
+    "BCE.TO": 0,
+    "BMO.TO": 0,
+    "BN.TO": 0,
+    "BNS.TO": 0,
+    "CAE.TO": 0,
+    "CCL-B.TO": 0,
+    "CCO.TO": 0,
+    "CIGI.TO": 0,
+    "CM.TO": 0,
+    "CNQ.TO": 0,
+    "CNR.TO": 0,
+    "CP.TO": 0,
+    "CSU.TO": 0,
+    "CTC-A.TO": 0,
+    "CVE.TO": 0,
+    "CVO.TO": 0,
+    "DOL.TO": 0,
+    "DSG.TO": 0,
+    "EMA.TO": 0,
+    "ENB.TO": 0,
+    "FFH.TO": 0,
+    "FM.TO": 0,
+    "FNV.TO": 0,
+    "FSV.TO": 0,
+    "FTS.TO": 0,
+    "GIB-A.TO": 0,
+    "GIL.TO": 0,
+    "GWO.TO": 0,
+    "H.TO": 0,
+    "IFC.TO": 0,
+    "IMO.TO": 0,
+    "IVN.TO": 0,
+    "K.TO": 0,
+    "L.TO": 0,
+    "LSPD.TO": 0,
+    "LUN.TO": 0,
+    "MFC.TO": 0,
+    "MG.TO": 0,
+    "MRU.TO": 0,
+    "NA.TO": 0,
+    "NTR.TO": 0,
+    "OTEX.TO": 0,
+    "POW.TO": 0,
+    "PPL.TO": 0,
+    "QBR-B.TO": 0,
+    "QSR.TO": 0,
+    "RCI-B.TO": 0,
+    "RY.TO": 0,
+    "SAP.TO": 0,
+    "SHOP.TO": 0,
+    "SII.TO": 0,
+    "SIS.TO": 0,
+    "SLF.TO": 0,
+    "STN.TO": 0,
+    "SU.TO": 0,
+    "T.TO": 0,
+    "TD.TO": 0,
+    "TECK-B.TO": 0,
+    "TFII.TO": 0,
+    "TIH.TO": 0,
+    "TOU.TO": 0,
+    "TRP.TO": 0,
+    "WCN.TO": 0,
+    "WPM.TO": 0,
+    "WSP.TO": 0,
+    "X.TO": 0,
+    "XIC.TO": 0
+  },
+  "data_mode": "live",
+  "git_sha": "219ef16e6f1662baae20f1e8972ac1c339356e5a",
+  "market_date": "2026-11-27",
+  "mode": "full",
+  "model_card_hash": "c363b37d48043901d8ae6ec89c0cbbaa67ee037635a1c4080a36d5c2cb0f3dc8",
+  "new_structural_breaks": [
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "ABX.TO"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "BMO.TO"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "BNS.TO"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "CM.TO"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "DFUV"
+    },
+    {
+      "date": "2026-11-24",
+      "method": "cusum",
+      "ticker": "FM.TO"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "IWP"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "LUN.TO"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "QBR-B.TO"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "TD.TO"
+    },
+    {
+      "date": "2026-11-20",
+      "method": "cusum",
+      "ticker": "TECK-B.TO"
+    }
+  ],
+  "opportunity_flags": [],
+  "risk_label_changes": [
+    {
+      "from": "Moderate",
+      "ticker": "ACGL",
+      "to": "Low"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "ALA.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "ATD.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "AZO",
+      "to": "Low"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "BAM.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "BCE.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "BMO.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "BN.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "BNS.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "CAE.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "CCL-B.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "CIGI.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "CM.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "CNQ.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "CNR.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "CP.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "CSU.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "CTC-A.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "CVE.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "DFUV",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "DOL.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "DSG.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "ECL",
+      "to": "Moderate"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "EG",
+      "to": "Low"
+    },
+    {
+      "from": "Low",
+      "ticker": "EMA.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "ENB.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "EXR",
+      "to": "Low"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "FFH.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "FNV.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "FSV.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "FTS.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "GIB-A.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "GWO.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "H.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "IFC.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "IMO.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "L.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "LSPD.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "MAR",
+      "to": "Low"
+    },
+    {
+      "from": "Low",
+      "ticker": "MFC.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "MG.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "MRU.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "NA.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "NTR.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "OTEX.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "POW.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "PPL.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "QSR.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "RCI-B.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "RGA",
+      "to": "Low"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "SAIC",
+      "to": "Low"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "SAP.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "SII.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "SIS.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "SLF.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "STN.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "SU.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "TD.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "TIH.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "TOU.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "TRP.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "WCN.TO",
+      "to": "High"
+    },
+    {
+      "from": "Moderate",
+      "ticker": "WSP.TO",
+      "to": "High"
+    },
+    {
+      "from": "Low",
+      "ticker": "X.TO",
+      "to": "High"
+    }
+  ],
+  "run_id": "35cb49ce-4023-53a8-8f0c-bbda5fcf6fcd",
+  "volatility": {
+    "A": 0.354,
+    "AAPL": 0.2337,
+    "ABBV": 0.2543,
+    "ABX.TO": 0.5645,
+    "ACGL": 0.194,
+    "ACN": 0.4743,
+    "ADP": 0.2336,
+    "AEM.TO": 0.5932,
+    "AFL": 0.1457,
+    "AIZ": 0.2074,
+    "AJG": 0.3179,
+    "ALA.TO": 0.2068,
+    "ALL": 0.2459,
+    "ALLE": 0.3049,
+    "AMZN": 0.4075,
+    "AQN.TO": 0.1929,
+    "ATD.TO": 0.2478,
+    "AWK": 0.2206,
+    "AZO": 0.2398,
+    "BAM.TO": 0.3195,
+    "BBY": 0.4259,
+    "BCE.TO": 0.2705,
+    "BDX": 0.2298,
+    "BJ": 0.3177,
+    "BMO.TO": 0.2354,
+    "BN.TO": 0.3308,
+    "BNS.TO": 0.2487,
+    "BRK-B": 0.1713,
+    "CAE.TO": 0.2664,
+    "CAH": 0.2338,
+    "CART": 0.3145,
+    "CB": 0.1834,
+    "CCL-B.TO": 0.2065,
+    "CCO.TO": 0.5742,
+    "CHD": 0.2145,
+    "CIGI.TO": 0.3815,
+    "CINF": 0.1793,
+    "CL": 0.2344,
+    "CM.TO": 0.2632,
+    "CME": 0.2102,
+    "CNQ.TO": 0.3385,
+    "CNR.TO": 0.183,
+    "COR": 0.2863,
+    "COST": 0.2058,
+    "CP.TO": 0.2015,
+    "CSU.TO": 0.3152,
+    "CSX": 0.2625,
+    "CTAS": 0.2021,
+    "CTC-A.TO": 0.2897,
+    "CVE.TO": 0.3584,
+    "CVO.TO": 0.5109,
+    "CVX": 0.245,
+    "DFUV": 0.1849,
+    "DGX": 0.1993,
+    "DHR": 0.2764,
+    "DIS": 0.2738,
+    "DOCU": 0.3594,
+    "DOL.TO": 0.2358,
+    "DSG.TO": 0.2538,
+    "DUK": 0.1622,
+    "ECL": 0.2371,
+    "ED": 0.1834,
+    "EG": 0.2107,
+    "EMA.TO": 0.1657,
+    "EMR": 0.3511,
+    "ENB.TO": 0.1467,
+    "EW": 0.2589,
+    "EXPD": 0.2556,
+    "EXR": 0.1845,
+    "FAST": 0.2478,
+    "FFH.TO": 0.3187,
+    "FM.TO": 0.7685,
+    "FNV.TO": 0.4582,
+    "FSV.TO": 0.31,
+    "FTS.TO": 0.1279,
+    "GEHC": 0.3141,
+    "GIB-A.TO": 0.2305,
+    "GIL.TO": 0.6141,
+    "GILD": 0.3094,
+    "GWO.TO": 0.2428,
+    "GWW": 0.294,
+    "H.TO": 0.1386,
+    "HAS": 0.3118,
+    "HLT": 0.2332,
+    "HST": 0.2699,
+    "ICE": 0.2513,
+    "IFC.TO": 0.2387,
+    "IMO.TO": 0.3468,
+    "ITW": 0.2227,
+    "IVN.TO": 0.6051,
+    "IWP": 0.3606,
+    "K.TO": 0.5937,
+    "KO": 0.1888,
+    "KR": 0.3008,
+    "L.TO": 0.1849,
+    "LH": 0.2756,
+    "LIN": 0.1843,
+    "LLY": 0.3187,
+    "LSPD.TO": 0.3968,
+    "LUN.TO": 0.7569,
+    "MA": 0.2451,
+    "MANH": 0.2827,
+    "MAR": 0.2258,
+    "MCK": 0.2824,
+    "MDLZ": 0.2103,
+    "MDT": 0.2969,
+    "MET": 0.2586,
+    "MFC.TO": 0.2221,
+    "MG.TO": 0.3584,
+    "MMM": 0.332,
+    "MO": 0.2227,
+    "MRSH": 0.2346,
+    "MRU.TO": 0.2002,
+    "MSFT": 0.3096,
+    "MSI": 0.1956,
+    "MTD": 0.2778,
+    "NA.TO": 0.2307,
+    "NTR.TO": 0.2702,
+    "OTEX.TO": 0.3119,
+    "PCTY": 0.2821,
+    "PG": 0.2091,
+    "PGR": 0.2311,
+    "POW.TO": 0.2673,
+    "PPL.TO": 0.2111,
+    "PSA": 0.185,
+    "PSX": 0.3608,
+    "PYPL": 0.3441,
+    "QBR-B.TO": 0.7508,
+    "QSR.TO": 0.2321,
+    "RCI-B.TO": 0.2866,
+    "REGN": 0.4333,
+    "RGA": 0.1877,
+    "ROP": 0.3207,
+    "RSG": 0.1977,
+    "RY.TO": 0.2191,
+    "SAIC": 0.2561,
+    "SAP.TO": 0.2245,
+    "SHOP.TO": 0.6217,
+    "SII.TO": 0.4231,
+    "SIS.TO": 0.3282,
+    "SLF.TO": 0.3099,
+    "SN": 0.4361,
+    "SO": 0.1683,
+    "SPG": 0.1965,
+    "STN.TO": 0.4892,
+    "SU.TO": 0.3345,
+    "T.TO": 0.6887,
+    "TD.TO": 0.2301,
+    "TECH": 0.0656,
+    "TECK-B.TO": 0.6244,
+    "TFII.TO": 0.5104,
+    "TGT": 0.3724,
+    "TIH.TO": 0.4659,
+    "TMO": 0.2966,
+    "TOU.TO": 0.2536,
+    "TRP.TO": 0.166,
+    "TRV": 0.1878,
+    "TSCO": 0.3734,
+    "ULTA": 0.2942,
+    "UNP": 0.2419,
+    "V": 0.2443,
+    "VLTO": 0.2299,
+    "VNT": 0.331,
+    "WAT": 0.3352,
+    "WCN.TO": 0.3636,
+    "WEC": 0.1759,
+    "WELL": 0.2067,
+    "WM": 0.2104,
+    "WMT": 0.224,
+    "WPM.TO": 0.6308,
+    "WRB": 0.1893,
+    "WSP.TO": 0.3886,
+    "WST": 0.3101,
+    "WTRG": 0.2178,
+    "X.TO": 0.2193
+  },
+  "weekly_reference": "2026-11-26"
+}
