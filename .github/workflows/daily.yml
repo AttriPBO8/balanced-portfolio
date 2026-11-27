@@ -1,9 +1,9 @@
 name: daily
-# Mon-Fri ~22:30 ET (03:30 UTC Tue-Sat). Monitoring only; never required for callouts.
+# Mon-Fri ~21:41 ET (02:41 UTC Tue-Sat; odd minute to dodge top-of-hour delays). Monitoring only; never required for callouts.
 # Turn it off with schedule.daily.enabled: false (or daily.until) in config/settings.yaml.
 on:
   schedule:
-    - cron: "30 3 * * 2-6"
+    - cron: "41 2 * * 2-6"
   workflow_dispatch:
 concurrency:
   group: pipeline
@@ -32,11 +32,7 @@ jobs:
         run: |
           git config user.name "callout-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add artifacts state
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "daily monitor $(date -u +%F)"
-          git pull --rebase
-          git push
+          python -m pipeline.gitsync "daily monitor $(date -u +%F)" artifacts state
       - name: Open issues for alerts
         if: always()
         env:

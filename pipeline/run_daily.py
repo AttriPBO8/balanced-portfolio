@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 
 from callouts.addon import opportunity_flag
-from common.config import load_config, universe
+from common.config import load_config, universe, with_holdings
 from common.dates import WEEKDAYS, decision_date_for, is_trading_day, iso_utc, toronto_today, utc_now
 from common.io import StagedWrite, git_sha, new_run_id
 from features.snapshot import features_at
@@ -61,6 +61,11 @@ def run_daily(root: Path | str = ".", now: dt.datetime | None = None, source=Non
         return {"status": "noop"}
 
     bench = cfg["settings"]["data"]["benchmark"]
+    try:
+        from common.owner_inputs import load_positions
+        with_holdings(cfg, set(load_positions(root)["ticker"]))
+    except Exception as e:  # the weekly run reports bad owner files loudly; daily monitoring carries on
+        log.warning("positions.csv not readable for the daily monitor: %s", e)
     tickers = universe(cfg)
     start = max(dt.date.fromisoformat(str(cfg["settings"]["data"]["start_date"])), market_date - dt.timedelta(days=760))
     source = source or make_source(cfg)

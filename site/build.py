@@ -257,6 +257,10 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
     if cal:
         for a, r in (cal.get("contribution_room") or {}).items():
             banners += [f"{a}: {w}" for w in r.get("warnings", [])]
+        if cal.get("uncovered_holdings"):
+            banners.append("Holdings without price data (not valued or reviewed): " + "; ".join(cal["uncovered_holdings"])
+                           + ". Check the ticker in positions.csv (.TO for TSX).")
+        banners += [w for w in (cal.get("position_warnings") or []) if "dated after" in w]
 
     parts = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
              f"<title>Weekly Stock Callouts</title><style>{CSS}</style></head><body><header><h1>Weekly stock callouts</h1>"
@@ -271,6 +275,19 @@ def build(root: Path, out: Path, now: dt.datetime | None = None) -> Path:
         parts.append(f"<p class='muted'>Decision date {e(cal['decision_date'])} · computed {e(cal['computed_at_utc'])} · "
                      f"run <span class='mono'>{e(cal['run_id'])[:8]}</span> · model card <span class='mono'>{e(cal['model_card_hash'])[:12]}</span>"
                      f"{' · ' + e(cal['list_note']) if cal.get('list_note') else ''}</p>")
+        info = []
+        if cal.get("close_used"):
+            info.append(f"prices: close of {e(cal['close_used'])}"
+                        + (" (on-demand run dated today)" if cal.get("run_kind") == "on_demand_today" else ""))
+        fx = cal.get("fx") or {}
+        if fx.get("usdcad"):
+            info.append(f"US holdings ({e(', '.join(fx.get('converted', [])))}) converted at USD/CAD {fx['usdcad']:.4f} "
+                        f"({e(fx.get('date'))})")
+        if cal.get("held_outside_lists"):
+            info.append("reviewed but never suggested as new buys (not on the stock list): "
+                        + e(", ".join(cal["held_outside_lists"])))
+        if info:
+            parts.append("<p class='muted'>" + " · ".join(info) + "</p>")
         n_act = sum(1 for c in cal["callouts"] if c["class"] in SIDE)
         parts.append(f"<p>{n_act} to do this week (blue edge), best projected value first. The rest are good trades that don't fit "
                      "this week's trade limit or cash, also by projected value. Projected value is the score turned into an expected "

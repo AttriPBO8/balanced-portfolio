@@ -22,8 +22,9 @@ import pandas as pd
 from backtest.validation import purged_walk_forward
 from callouts.builder import ACTION_CLASSES
 from callouts.rules import contribution_room
-from common.config import enabled_accounts, load_config, universe
-from common.dates import (decision_date_for, decision_dates_between, iso_utc, last_close_on_or_before, utc_now)
+from common.config import enabled_accounts, load_config, universe, with_holdings
+from common.dates import (decision_date_for, decision_dates_between, iso_utc, last_close_on_or_before, toronto_today,
+                          utc_now)
 from common.io import (StagedWrite, frame_hash, git_sha, new_run_id, read_json, sha256_file, sha256_obj)
 from common.owner_inputs import load_portfolio
 from features.snapshot import FEATURE_SET_VERSION, MODEL_FEATURES, features_at, label_for, rolling_features
@@ -127,9 +128,19 @@ def _performance(root: Path, panel, D: dt.date, cfg: dict, validation: dict | No
             "notes": ["Short-window IC is a diagnostic only.", "Baseline comparison: see live_replay and the backtest report."]}
 
 
+def coverage_problems(portfolio, panel, close_D: dt.date) -> list[str]:
+    """One line per holding the price feed could not cover (wrong suffix, delisted, feed down)."""
+    out = []
+    cols = set(panel.adj_close.columns)
+    for t in sorted(portfolio.held_tickers()):
+        if t not in cols or panel.close[t].loc[:pd.Timestamp(close_D)].dropna().empty:
+            out.append(f"{t}: no prices from the data source")
+    return out
+
+
 def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=None, cfg_overrides: dict | None = None,
                force_reissue: str | None = None, fail_at: str | None = None, decision_date: dt.date | None = None,
-               alerts: Alerts | None = None) -> dict:
+               alerts: Alerts | None = None, as_of_today: bool = False) -> dict:
     root = Path(root)
     cfg = load_config(root, cfg_overrides)
     now = now or utc_now()
@@ -138,7 +149,9 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
     if not sched.get("enabled", True):
         log.info("weekly job disabled in config; exiting 0")
         return {"status": "disabled"}
-    D = decision_date or decision_date_for(now, sched["day"])
+    # as_of_today: an on-demand run dated today (Toronto) that uses the latest close <= today,
+    # instead of last Saturday's date and Friday's close. It is saved under its own date.
+    D = decision_date or (toronto_today(now) if as_of_today else decision_date_for(now, sched["day"]))
     mode = cfg["settings"]["data"]["mode"]
 
     # step 2: already done?
@@ -154,6 +167,10 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
                   if not st.has_weekly_artifact(root, m)]
     with_snap = missed[: int(sched["max_catchup_weeks"])]
 
+    portfolio = load_portfolio(root)   # future-date checks use the real clock
+    held_extra = with_holdings(cfg, portfolio.held_tickers())
+    if held_extra:
+        log.info("holdings outside the buy lists, reviewed this week: %s", ", ".join(held_extra))
     source = source or make_source(cfg)
     start = dt.date.fromisoformat(str(cfg["settings"]["data"]["start_date"]))
     close_D = last_close_on_or_before(D)
@@ -164,7 +181,18 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
         raise StepFailure("no price data fetched and no cache available")
     macro = sample_macro(start, close_D) if mode == "sample" else _safe_macro(cfg, start, root)
 
-    portfolio = load_portfolio(root)
+    uncovered = coverage_problems(portfolio, panel, close_D)
+    for msg in uncovered:
+        log.warning(msg)
+    if uncovered:
+        alerts.add("Holdings without price data", "These holdings could not be valued or reviewed this week:\n\n- "
+                   + "\n- ".join(uncovered) + "\n\nCheck the ticker in data/positions/positions.csv: TSX listings "
+                   "need the .TO suffix (CNR.TO), US listings have none (AMZN).")
+    late = sorted({str(t) for t, a in zip(portfolio.positions["ticker"], portfolio.positions["as_of"])
+                   if str(a) > D.isoformat()})
+    if late:
+        portfolio.warnings.append(f"positions.csv is dated after this run's date {D} for {', '.join(late)}; "
+                                  "run with 'as of today' to use them as current")
     sha = git_sha(root)
     input_hash = sha256_obj({"prices": frame_hash(panel.upto(close_D).adj_close.round(6)),
                              "positions": sha256_file(root / "data/positions/positions.csv"),
@@ -223,6 +251,9 @@ def run_weekly(root: Path | str = ".", now: dt.datetime | None = None, source=No
             "projection_ic": wk["meta"]["projection_ic"],
             "list_note": wk["meta"]["shortfall_reason"], "selector_log": wk["meta"]["log"],
             "position_warnings": portfolio.warnings,
+            "run_kind": "on_demand_today" if as_of_today else ("dated" if decision_date else "scheduled"),
+            "close_used": close_D.isoformat(),
+            "fx": panel.fx, "held_outside_lists": held_extra, "uncovered_holdings": uncovered,
         }
         perf.update(common)
         perf["decision_date"] = D.isoformat()
@@ -359,6 +390,8 @@ def main(argv=None) -> int:
     ap.add_argument("--mode", choices=["live", "sample"])
     ap.add_argument("--date", help="decision date (YYYY-MM-DD); default from the clock in America/Toronto")
     ap.add_argument("--force-reissue", metavar="REASON")
+    ap.add_argument("--as-of-today", action="store_true",
+                    help="date the run today (Toronto) and use the latest close, instead of last Saturday")
     a = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     root = Path(a.root)
@@ -371,7 +404,8 @@ def main(argv=None) -> int:
     alerts = Alerts(root)
     try:
         res = run_weekly(root, cfg_overrides=overrides, force_reissue=a.force_reissue,
-                         decision_date=dt.date.fromisoformat(a.date) if a.date else None, alerts=alerts)
+                         decision_date=dt.date.fromisoformat(a.date) if a.date else None, alerts=alerts,
+                         as_of_today=a.as_of_today)
         print(json.dumps({k: v for k, v in res.items() if k != "written"}, indent=2))
         alerts.flush()
         return 0

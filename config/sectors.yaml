@@ -67,3 +67,13 @@ IVN.TO: Materials
 CCL-B.TO: Materials
 FSV.TO: Real Estate
 CIGI.TO: Real Estate
+# Holdings outside the TSX-Core list (reviewed every week, never suggested as new buys
+# unless added to a buy list). US tickers are priced in USD and converted to CAD.
+ALA.TO: Utilities
+LSPD.TO: Information Technology
+CVO.TO: Information Technology
+SIS.TO: Health Care
+SII.TO: Financials
+AMZN: Consumer Discretionary
+DFUV: US Equity ETF
+IWP: US Equity ETF

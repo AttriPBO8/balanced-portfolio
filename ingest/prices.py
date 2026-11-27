@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from common.dates import trading_index, iso_utc, utc_now
+from common.tickers import FX_USDCAD, is_us_listed
 
 log = logging.getLogger(__name__)
 FIELDS = ("open", "high", "low", "close", "adj_close", "volume")
@@ -39,6 +40,7 @@ class PricePanel:
     events: list[dict] = field(default_factory=list)                 # data_gap / fetch events
     as_of_utc: str = ""
     source: str = ""
+    fx: dict = field(default_factory=dict)   # {"usdcad": rate, "date": ISO, "converted": [tickers]}
 
     @property
     def tickers(self) -> list[str]:
@@ -56,7 +58,7 @@ class PricePanel:
         return PricePanel(cut(self.open), cut(self.high), cut(self.low), cut(self.close),
                           cut(self.adj_close), cut(self.volume), cut(self.dividends), earn,
                           [e for e in self.events if e.get("date", "") <= as_of.isoformat()],
-                          self.as_of_utc, self.source)
+                          self.as_of_utc, self.source, self.fx)
 
     def hash_frame(self) -> pd.DataFrame:
         return self.adj_close
@@ -250,9 +252,11 @@ class LiveSource:
     def fetch(self, tickers: list[str], start: dt.date, end: dt.date, root: Path) -> PricePanel:
         cache_dir = root / "data/raw/prices"
         cache_dir.mkdir(parents=True, exist_ok=True)
-        fetched = self._download(tickers, start, end)
+        us = [t for t in tickers if is_us_listed(t)]
+        wanted = list(tickers) + ([FX_USDCAD] if us else [])
+        fetched = self._download(wanted, start, end)
         frames, events = {}, []
-        for t in tickers:
+        for t in wanted:
             cpath = cache_dir / f"{t}.csv"
             cached = pd.read_csv(cpath, index_col=0, parse_dates=True) if cpath.exists() else None
             new = fetched.get(t)
@@ -266,12 +270,48 @@ class LiveSource:
                 df = df[~df.index.duplicated(keep="last")].sort_index()
                 df.to_csv(cpath)
             frames[t] = df.loc[pd.Timestamp(start):pd.Timestamp(end)]
+        fx_info = {}
+        if us:
+            fx = frames.pop(FX_USDCAD, None)
+            events = [e for e in events if e["ticker"] != FX_USDCAD]
+            rate = fx["close"] if fx is not None and len(fx) else None
+            for t in [t for t in us if t in frames]:
+                if rate is None:
+                    frames.pop(t)
+                    events.append({"type": "data_gap", "ticker": t, "date": end.isoformat(), "reason": "no_usdcad_rate"})
+                else:
+                    frames[t] = to_cad(frames[t], rate, end)
+            if rate is not None:
+                fx_info = {"usdcad": round(float(rate.dropna().iloc[-1]), 4),
+                           "date": rate.dropna().index[-1].date().isoformat(),
+                           "converted": sorted(t for t in us if t in frames)}
         panel = _assemble(frames)
         panel.events = events
+        panel.fx = fx_info
         panel.earnings = {t: self._earnings(t, root) for t in tickers if not t.startswith("XI")}
         panel.as_of_utc = iso_utc(utc_now())
         panel.source = self.name
         return panel
+
+
+PRICE_COLS = ["open", "high", "low", "close", "adj_close"]
+
+
+def to_cad(df: pd.DataFrame, usdcad: pd.Series, end: dt.date) -> pd.DataFrame:
+    """US-dollar bars -> Canadian dollars at each day's USD/CAD rate (CAD per USD).
+
+    The panel runs on the TSX calendar. On a TSX trading day when US markets are shut
+    (US Thanksgiving, Juneteenth...) the last US close is carried forward, at most 2 days;
+    volume stays empty on those days so liquidity is not overstated."""
+    if df.empty:
+        return df
+    idx = df.index.union(trading_index(df.index.min().date(), end))
+    df = df.reindex(idx)
+    df[PRICE_COLS] = df[PRICE_COLS].ffill(limit=2)
+    df["dividend"] = df["dividend"].fillna(0.0)
+    r = usdcad.reindex(usdcad.index.union(idx)).ffill().bfill().reindex(idx)
+    df[PRICE_COLS + ["dividend"]] = df[PRICE_COLS + ["dividend"]].mul(r, axis=0)
+    return df.dropna(subset=["close"])
 
 
 def _assemble(frames: dict[str, pd.DataFrame]) -> PricePanel:

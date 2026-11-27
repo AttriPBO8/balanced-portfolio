@@ -350,6 +350,28 @@ def replay_live(root: Path, cfg: dict, panel, D: dt.date) -> dict | None:
 
 # ------------------------------------------------------------------ CLI
 
+def check_backtest_args(start: str | None, end: str | None, every_weeks: int | None, cfg: dict,
+                        today: dt.date | None = None) -> None:
+    """Reject inputs that would silently produce an empty or misleading replay."""
+    today = today or utc_now().date()
+    data_start = dt.date.fromisoformat(str(cfg["settings"]["data"]["start_date"]))
+    parsed = {}
+    for name, v in (("start", start), ("end", end)):
+        if v:
+            try:
+                parsed[name] = dt.date.fromisoformat(v)
+            except ValueError:
+                raise ValueError(f"backtest {name} must be a date like 2024-01-06, got '{v}'") from None
+            if parsed[name] > today:
+                raise ValueError(f"backtest {name} {v} is in the future")
+            if parsed[name] < data_start:
+                raise ValueError(f"backtest {name} {v} is before the price history starts ({data_start})")
+    if "start" in parsed and "end" in parsed and parsed["start"] >= parsed["end"]:
+        raise ValueError("backtest start must be before end")
+    if every_weeks is not None and every_weeks < 1:
+        raise ValueError("every_weeks must be 1 or more")
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=".")
@@ -369,6 +391,11 @@ def main(argv=None) -> int:
             return 2
         _seed_sample_root(root)
     cfg = load_config(root, overrides)
+    try:
+        check_backtest_args(a.start, a.end, a.every_weeks, cfg)
+    except ValueError as e:
+        log.error("%s", e)
+        return 2
     mode = cfg["settings"]["data"]["mode"]
     from ingest.macro import sample_macro
     from ingest.prices import make_source

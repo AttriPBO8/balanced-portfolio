@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pandas as pd
+import yaml
+
+from common.tickers import CANADIAN_SUFFIXES, valid_symbol
 
 ACCOUNTS = ("TFSA", "RRSP", "NONREG")
 SIDES = ("BUY", "SELL")
@@ -18,6 +21,72 @@ KINDS = ("CONTRIBUTION", "WITHDRAWAL", "DIVIDEND", "TRANSFER")
 
 class OwnerInputError(ValueError):
     pass
+
+
+def _today() -> dt.date:
+    from common.dates import toronto_today, utc_now
+    return toronto_today(utc_now())
+
+
+def _lines(mask: pd.Series) -> list[int]:
+    return [int(i) + 2 for i in mask[mask].index]   # +2: header row and 1-based lines
+
+
+def _dates(df: pd.DataFrame, col: str, name: str) -> pd.Series:
+    d = pd.to_datetime(df[col], format="%Y-%m-%d", errors="coerce")
+    if d.isna().any():
+        raise OwnerInputError(f"{name}: '{col}' must be a date like 2026-11-26 on line(s) {_lines(d.isna())}")
+    return d.dt.date
+
+
+def _numbers(df: pd.DataFrame, col: str, name: str) -> pd.Series:
+    v = pd.to_numeric(df[col].astype("string").str.replace(",", "", regex=False), errors="coerce")
+    if v.isna().any():
+        raise OwnerInputError(f"{name}: '{col}' must be a number on line(s) {_lines(v.isna())}")
+    return v.astype(float)
+
+
+def _no_future(d: pd.Series, name: str, col: str, today: dt.date | None) -> None:
+    today = today or _today()
+    fut = d > today
+    if fut.any():
+        raise OwnerInputError(f"{name}: '{col}' is in the future (after {today}) on line(s) {_lines(fut)}")
+
+
+def _owner_config(root: Path) -> tuple[set[str], set[str]]:
+    """(TSX-Core tickers, disabled accounts) from config/, if present."""
+    listed, disabled = set(), set()
+    try:
+        u = yaml.safe_load((root / "config/universe.yaml").read_text()) or {}
+        listed = set(u.get("tsx_core") or []) | set(u.get("us_track") or [])
+    except (OSError, yaml.YAMLError):
+        pass
+    try:
+        a = yaml.safe_load((root / "config/accounts.yaml").read_text()) or {}
+        if not (a.get("NONREG") or {}).get("enabled"):
+            disabled.add("NONREG")
+    except (OSError, yaml.YAMLError):
+        pass
+    return listed, disabled
+
+
+def check_tickers(tickers: pd.Series, name: str, listed: set[str]) -> None:
+    """Yahoo symbols: TSX needs .TO (CNR.TO); a bare symbol is read as a US listing (AMZN)."""
+    bad = ~tickers.map(valid_symbol)
+    if bad.any():
+        raise OwnerInputError(f"{name}: ticker {sorted(set(tickers[bad]))} is not a valid symbol (lines {_lines(bad)})")
+    bare = tickers.map(lambda t: not t.endswith(CANADIAN_SUFFIXES) and f"{t}.TO" in listed)
+    if bare.any():
+        fix = ", ".join(f"{t} -> {t}.TO" for t in sorted(set(tickers[bare])))
+        raise OwnerInputError(f"{name}: these look like TSX stocks without the .TO suffix ({fix}), lines "
+                              f"{_lines(bare)}. Without it the price feed reads a US symbol or nothing.")
+
+
+def _accounts_enabled(df: pd.DataFrame, name: str, disabled: set[str]) -> None:
+    bad = df["account_type"].isin(disabled)
+    if bad.any():
+        raise OwnerInputError(f"{name}: account {sorted(set(df.loc[bad, 'account_type']))} is disabled in "
+                              f"config/accounts.yaml (lines {_lines(bad)})")
 
 
 POSITIONS_COLS = ["ticker", "account_type", "quantity", "book_cost_acb_cad", "as_of"]
@@ -48,59 +117,102 @@ def _read(path: Path, cols: list[str], required: list[str]) -> pd.DataFrame:
     return df
 
 
-def load_positions(root: Path) -> pd.DataFrame:
+def load_positions(root: Path, today: dt.date | None = None) -> pd.DataFrame:
+    name = "positions.csv"
     df = _read(root / "data/positions/positions.csv", POSITIONS_COLS, POSITIONS_COLS)
-    df["quantity"] = pd.to_numeric(df["quantity"], errors="raise").astype(float)
-    df["book_cost_acb_cad"] = pd.to_numeric(df["book_cost_acb_cad"], errors="raise").astype(float)
+    listed, disabled = _owner_config(root)
+    df["quantity"] = _numbers(df, "quantity", name)
+    df["book_cost_acb_cad"] = _numbers(df, "book_cost_acb_cad", name)
     df["ticker"] = df["ticker"].astype(str).str.upper()
     df["account_type"] = df["account_type"].astype(str)
     if (df["quantity"] < 0).any():
-        raise OwnerInputError("positions.csv: negative quantity (short selling is out of scope)")
+        raise OwnerInputError(f"{name}: negative quantity on line(s) {_lines(df['quantity'] < 0)} "
+                              "(short selling is out of scope)")
+    if (df["book_cost_acb_cad"] < 0).any():
+        raise OwnerInputError(f"{name}: negative book_cost_acb_cad on line(s) {_lines(df['book_cost_acb_cad'] < 0)}")
+    d = _dates(df, "as_of", name)
+    _no_future(d, name, "as_of", today)
+    df["as_of"] = d.map(dt.date.isoformat)
+    check_tickers(df["ticker"], name, listed)
+    _accounts_enabled(df[df["quantity"] > 0], name, disabled)
+    dup = df.duplicated(["ticker", "account_type"], keep=False)
+    if dup.any():
+        pairs = sorted({f"{t} in {a}" for t, a in zip(df.loc[dup, "ticker"], df.loc[dup, "account_type"])})
+        raise OwnerInputError(f"{name}: the same stock is listed twice in one account ({', '.join(pairs)}, "
+                              f"lines {_lines(dup)}). Combine them into one row: add the quantities and the book costs.")
     return df[df["quantity"] > 0].reset_index(drop=True)
 
 
-def load_trades(root: Path) -> pd.DataFrame:
+def load_trades(root: Path, today: dt.date | None = None) -> pd.DataFrame:
+    name = "trades.csv"
     req = ["trade_id", "date", "account_type", "ticker", "side", "quantity", "price"]
     df = _read(root / "data/ledger/trades.csv", TRADES_COLS, req)
+    listed, disabled = _owner_config(root)
     if "fees" not in df.columns:
         df["fees"] = "0"
     if "callout_ref" not in df.columns:
         df["callout_ref"] = pd.NA
-    df["date"] = pd.to_datetime(df["date"]).dt.date
+    df["fees"] = df["fees"].fillna("0").replace("", "0")
+    df["date"] = _dates(df, "date", name)
+    _no_future(df["date"], name, "date", today)
+    for c in ("quantity", "price", "fees"):
+        df[c] = _numbers(df, c, name)
     for c in ("quantity", "price"):
-        df[c] = pd.to_numeric(df[c], errors="raise").astype(float)
-    df["fees"] = pd.to_numeric(df["fees"].fillna("0").replace("", "0"), errors="raise").astype(float)
+        if (df[c] <= 0).any():
+            raise OwnerInputError(f"{name}: '{c}' must be more than 0 on line(s) {_lines(df[c] <= 0)}")
+    if (df["fees"] < 0).any():
+        raise OwnerInputError(f"{name}: 'fees' cannot be negative on line(s) {_lines(df['fees'] < 0)}")
     df["side"] = df["side"].astype(str).str.upper()
     df["ticker"] = df["ticker"].astype(str).str.upper()
     df["account_type"] = df["account_type"].astype(str)
     bad = ~df["side"].isin(SIDES)
     if bad.any():
-        raise OwnerInputError(f"trades.csv: side must be BUY or SELL, got {sorted(set(df.loc[bad, 'side']))}")
+        raise OwnerInputError(f"{name}: side must be BUY or SELL, got {sorted(set(df.loc[bad, 'side']))}")
     if df["trade_id"].duplicated().any():
-        raise OwnerInputError("trades.csv: duplicate trade_id (partial fills of one order count once; use one row)")
+        raise OwnerInputError(f"{name}: duplicate trade_id (partial fills of one order count once; use one row)")
+    check_tickers(df["ticker"], name, listed)
+    _accounts_enabled(df, name, disabled)
     return df.sort_values(["date", "trade_id"]).reset_index(drop=True)
 
 
-def load_cash(root: Path) -> pd.DataFrame:
+def load_cash(root: Path, today: dt.date | None = None) -> pd.DataFrame:
+    name = "cash.csv"
     df = _read(root / "data/ledger/cash.csv", CASH_COLS, ["account_type", "cash_cad", "as_of"])
+    _, disabled = _owner_config(root)
     if "cash_usd" not in df.columns:
         df["cash_usd"] = "0"
-    df["cash_cad"] = pd.to_numeric(df["cash_cad"], errors="raise").astype(float)
-    df["cash_usd"] = pd.to_numeric(df["cash_usd"].fillna("0"), errors="raise").astype(float)
-    df["as_of"] = pd.to_datetime(df["as_of"]).dt.date
+    df["cash_usd"] = df["cash_usd"].fillna("0").replace("", "0")
+    for c in ("cash_cad", "cash_usd"):
+        df[c] = _numbers(df, c, name)
+        if (df[c] < 0).any():
+            raise OwnerInputError(f"{name}: '{c}' cannot be negative on line(s) {_lines(df[c] < 0)}")
+    df["as_of"] = _dates(df, "as_of", name)
+    _no_future(df["as_of"], name, "as_of", today)
     df["account_type"] = df["account_type"].astype(str)
+    dup = df["account_type"].duplicated(keep=False)
+    if dup.any():
+        raise OwnerInputError(f"{name}: one row per account; {sorted(set(df.loc[dup, 'account_type']))} appears "
+                              f"more than once (lines {_lines(dup)})")
+    _accounts_enabled(df[df["cash_cad"] > 0], name, disabled)
     return df
 
 
-def load_contributions(root: Path) -> pd.DataFrame:
+def load_contributions(root: Path, today: dt.date | None = None) -> pd.DataFrame:
+    name = "contributions.csv"
     df = _read(root / "data/ledger/contributions.csv", CONTRIB_COLS, CONTRIB_COLS)
-    df["date"] = pd.to_datetime(df["date"]).dt.date
-    df["amount_cad"] = pd.to_numeric(df["amount_cad"], errors="raise").astype(float)
+    _, disabled = _owner_config(root)
+    df["date"] = _dates(df, "date", name)
+    _no_future(df["date"], name, "date", today)
+    df["amount_cad"] = _numbers(df, "amount_cad", name)
+    if (df["amount_cad"] <= 0).any():
+        raise OwnerInputError(f"{name}: 'amount_cad' must be more than 0 (use kind WITHDRAWAL for money out) "
+                              f"on line(s) {_lines(df['amount_cad'] <= 0)}")
     df["kind"] = df["kind"].astype(str).str.upper()
     df["account_type"] = df["account_type"].astype(str)
     bad = ~df["kind"].isin(KINDS)
     if bad.any():
-        raise OwnerInputError(f"contributions.csv: unknown kind {sorted(set(df.loc[bad, 'kind']))}")
+        raise OwnerInputError(f"{name}: unknown kind {sorted(set(df.loc[bad, 'kind']))}")
+    _accounts_enabled(df, name, disabled)
     return df
 
 
@@ -189,9 +301,10 @@ class Portfolio:
         return max(base, 0.0)
 
 
-def load_portfolio(root: Path) -> Portfolio:
-    positions = load_positions(root)
-    trades = load_trades(root)
-    cash = load_cash(root)
-    contributions = load_contributions(root)
+def load_portfolio(root: Path | str, today: dt.date | None = None) -> Portfolio:
+    root = Path(root)
+    positions = load_positions(root, today)
+    trades = load_trades(root, today)
+    cash = load_cash(root, today)
+    contributions = load_contributions(root, today)
     return Portfolio(positions, trades, cash, contributions, cross_check(positions, trades))
